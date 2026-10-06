@@ -122,6 +122,9 @@ spoty connect
 # Ver estado de la sesión actual
 spoty status
 
+# Descargar biblioteca de canciones
+spoty download-songs
+
 # Cerrar sesión (borra tokens guardados)
 spoty logout
 
@@ -137,6 +140,20 @@ spoty --help
 4. La CLI recibe el callback, intercambia el código por tokens y los guarda
 5. Muestra mensaje de éxito: `Conectado correctamente a Spotify como {nombre} ({email})`
 
+### Descarga de biblioteca de canciones
+
+Ejecuta `spoty download-songs` (o selecciona la opción 4 en el menú interactivo) para descargar todo el listado de canciones guardadas ("Me gusta") de tu biblioteca de Spotify. El sistema:
+
+1. Valida sesión OAuth existente (reutiliza tokens guardados en `data/tokens.json`)
+2. Obtiene access token válido (refresh automático si ha expirado)
+3. Descarga paginada todas las tracks usando `GET /me/tracks` (máx 50 por página)
+4. Maneja rate limits (HTTP 429) con backoff exponencial y respeto a `Retry-After`
+5. Refresca token automáticamente si expira durante la descarga
+6. Guarda los resultados en un archivo con nombre `YYYY-MM-DD-download_songs.json`
+7. Muestra mensaje de éxito con ruta de archivo y número de tracks descargados
+
+**Nombre de archivo**: `YYYY-MM-DD-download_songs.json` (fecha local del sistema al iniciar)
+
 ### Si el navegador no se abre automáticamente
 
 La CLI muestra la URL de autorización en consola. Cópiala y pégala manualmente en tu navegador.
@@ -145,14 +162,35 @@ La CLI muestra la URL de autorización en consola. Cópiala y pégala manualment
 
 ```
 spoty2/
-├── data/
+├ data/
 │   ├── tokens.json    # Tokens OAuth (permisos 0o600)
 │   └── app.log        # Log técnico (rotación >5MB)
-├── src/
-│   ├── presentation/  # CLI, prompts, mensajes
-│   ├── business/      # Lógica de negocio (pura, reutilizable)
-│   └── data/          # HTTP, storage, logging
-└── tests/             # Tests unitarios (Vitest)
+├ docs/
+│   ├── constitution.md    # Principios innegociables SDD
+│   ├── rules.md           # Reglas de integración API Spotify
+│   ├── agent.md           # Identidad y rol del agente
+│   └── open-api-schema.yaml  # Especificación OpenAPI de Spotify
+├ specs/
+│   ├── 001-spoty2-mvp/
+│   │   ├── plan.md          # Plan de implementación N-Tier y RFs
+│   │   ├── resumen-fixes.md # Correcciones UX/UI y no considerado inicialmente
+│   │   └── spec.md          # Especificación funcional del MVP
+│   └── 002-download-songs/
+│       ├── ACCEPTANCE_CRITERIA.feature
+│       ├── ARCHITECTURE.md
+│       ├── REQUIREMENTS.md
+│       ├── SPECS.md
+│       └── USE_CASES.md
+├ src/
+│   ├── presentation/      # CLI, prompts, mensajes
+│   ├── business/
+│   │   ├── auth/          # Flujo OAuth 2.0 con PKCE
+│   │   ├── download-songs.ts  # Descarga biblioteca Spotify
+│   │   ├── transform.js     # Transformación de datos
+│   │   └── types/
+│   │       └── download-songs.types.ts
+│   └── data/              # HTTP, storage, logging
+└── tests/                 # Tests unitarios (Vitest)
 ```
 
 ## Scopes Solicitados

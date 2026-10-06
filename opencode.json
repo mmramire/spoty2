@@ -1,0 +1,12 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "spec-driven",
+  "agent": {
+    "spec-driven": {
+      "description": "Agente Spec-Driven: crea especificaciones, requerimientos, casos de uso, criterios Gherkin/BDD y arquitectura antes de implementar",
+      "mode": "primary",
+      "model": "nemotron/nemotron-3.5-lightning-free"
+    }
+  },
+  "instructions": ["AGENTS.md"]
+}
