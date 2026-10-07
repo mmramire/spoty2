@@ -12,7 +12,7 @@ permission:
     "specs/**/ARCHITECTURE.md": allow
     "specs/**/ADR-*.md": allow
     "specs/**/ADR*.md": allow
-  bash: deny
+  bash: ask
   websearch: allow
   webfetch: allow
   skill: allow
