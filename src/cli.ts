@@ -3,6 +3,7 @@ import { checkExistingSession, runAuthFlow } from './business/auth/flow.js';
 import { getUserProfile } from './business/auth/profile.js';
 import { clearStoredTokens, getStoredTokens } from './business/auth/tokens.js';
 import { type AuthConfig, getAuthConfig } from './business/auth/types.js';
+import { downloadSongs } from './business/download-songs.js';
 import {
   blank,
   bold,
@@ -130,6 +131,7 @@ async function showMenu(): Promise<void> {
   showMessage(MESSAGES.menu.title);
   showMessage(MESSAGES.menu.connect);
   showMessage(MESSAGES.menu.status);
+  showMessage(MESSAGES.menu.download);
   showMessage(MESSAGES.menu.logout);
   showMessage(MESSAGES.menu.exit);
   showMessage(dim(MESSAGES.menu.hint));
@@ -139,7 +141,7 @@ function getExitCodeForError(err: AuthError): number {
   return err.type === AuthErrorType.CONFIG ? 2 : err.type === AuthErrorType.PORT_IN_USE ? 3 : 1;
 }
 
-async function handleCommand(command: string): Promise<number> {
+async function handleCommand(command: string, args: string[] = []): Promise<number> {
   try {
     switch (command) {
       case 'connect':
@@ -151,6 +153,11 @@ async function handleCommand(command: string): Promise<number> {
       case 'logout':
         await handleLogout();
         return 0;
+      case 'download-songs': {
+        const outputDir = parseOutputDir(args);
+        const ok = await handleDownload(outputDir);
+        return ok ? 0 : 1;
+      }
       default:
         return -1;
     }
@@ -166,6 +173,42 @@ async function handleCommand(command: string): Promise<number> {
     showError(MESSAGES.errors.generic('Error desconocido'));
     return 1;
   }
+}
+
+function parseOutputDir(args: string[]): string | undefined {
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--output-dir' || args[i] === '-o') {
+      return args[i + 1];
+    }
+    if (args[i]?.startsWith('--output-dir=')) {
+      return args[i]?.split('=')[1];
+    }
+  }
+  return undefined;
+}
+
+async function handleDownload(outputDir?: string): Promise<boolean> {
+  const tokens = getStoredTokens();
+  if (!tokens) {
+    showMessage(error(MESSAGES.errors.configRequired));
+    showMessage(blank());
+    showMessage(info('Primero debes conectar con Spotify usando la opción 1.'));
+    showMessage(blank());
+    return false;
+  }
+  showMessage(section('Descargando biblioteca...'));
+  startSpinner('Descargando tracks de Spotify...');
+  const result = await downloadSongs(outputDir ? { outputDir } : {});
+  stopSpinner();
+  if (result.success) {
+    showMessage(
+      confirm(`¡Descarga completada! ${result.totalTracks} tracks guardados en ${result.filePath}`)
+    );
+  } else {
+    showMessage(error(result.error || 'Error desconocido durante la descarga'));
+  }
+  showMessage(blank());
+  return result.success;
 }
 
 async function runInteractiveMode(): Promise<number> {
@@ -184,9 +227,12 @@ async function runInteractiveMode(): Promise<number> {
         await handleStatus();
         break;
       case '3':
+        await handleDownload();
+        break;
+      case '9':
         await handleLogout();
         break;
-      case '4': {
+      case '0': {
         if (await confirmExit()) {
           showMessage('¡Hasta luego!');
           closeReadline();
@@ -198,7 +244,7 @@ async function runInteractiveMode(): Promise<number> {
         showError(MESSAGES.errors.invalidOption);
     }
 
-    if (choice !== '4') {
+    if (choice !== '0' && choice !== '3' && choice !== '9') {
       showMessage(divider());
       showMessage(info('Volviendo al menú principal...'));
       showMessage(blank());
@@ -215,6 +261,9 @@ async function showHelp(): Promise<number> {
   showMessage('  connect   Iniciar flujo de conexión con Spotify');
   showMessage('  status    Ver estado de la conexión actual');
   showMessage('  logout    Cerrar sesión y borrar tokens guardados');
+  showMessage(
+    '  download-songs  Descargar biblioteca a downloads/ (opciones: --output-dir <path>, -o <path>)'
+  );
   showMessage('  --help    Mostrar esta ayuda');
   showMessage('');
   showMessage(bold('Variables de entorno:'));
@@ -234,7 +283,7 @@ async function main(): Promise<number> {
   }
 
   if (args[0]) {
-    return handleCommand(args[0]);
+    return handleCommand(args[0], args);
   }
 
   return runInteractiveMode();

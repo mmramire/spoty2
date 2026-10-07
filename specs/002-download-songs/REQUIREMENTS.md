@@ -12,10 +12,14 @@
 | RF-006 | Progreso visible para bibliotecas grandes (3000+ tracks) | Should |
 | RF-007 | Directorio de salida configurable | Could |
 | RF-008 | Resumen estadístico al completar | Could |
+| RF-009 | Opción de menú interactivo para descargar biblioteca | Must |
+| RF-011 | Archivo en carpeta `downloads/` por defecto con fecha y hora | Must |
+| RNF-006 | Registro del proceso en `data/app.log` | Must |
 | RNF-001 | Performance: < 60s para 3000 tracks (red normal) | Must |
 | RNF-002 | Memoria: < 100MB pico durante descarga | Must |
 | RNF-003 | Seguridad: Tokens nunca en logs ni output | Must |
 | RNF-004 | Compatibilidad: Node.js 22+, Windows/Linux/macOS | Must |
+| RNF-005 | Código - Calidad y Estándares | Must |
 
 ---
 
@@ -34,15 +38,16 @@
 
 ---
 
-### RF-002: Nombre de archivo con prefijo de fecha ISO 8601
-**Descripción**: El archivo de salida debe llamarse `YYYY-MM-DD-download_songs.json` donde la fecha corresponde a la fecha local del sistema al iniciar la descarga.
+### RF-002: Nombre de archivo con prefijo de fecha y hora
+**Descripción**: El archivo de salida debe llamarse `YYYY-MM-DD_HH-mm-ss-download_songs.json` donde la fecha/hora corresponde al inicio de la descarga (hora local, sin `:` para compatibilidad Windows).
 
 **Criterios de validación**:
-- Formato exacto: `aaaa-mm-dd-download_songs.json` (ej: `2026-01-15-download_songs.json`)
-- Fecha en zona horaria local del usuario
+- Formato exacto: `aaaa-mm-dd_hh-mm-ss-download_songs.json` (ej: `2026-10-06_14-30-45-download_songs.json`)
+- Fecha y hora de inicio de descarga (no fin)
+- Sin milisegundos ni zona (`Z`) en el nombre
 - Si archivo existe, sobrescribir (o opción `--force` para confirmar)
 
-**Trazabilidad**: SPECS.md §1, §4
+**Trazabilidad**: SPECS.md §1, §4, RB-003
 
 ---
 
@@ -102,12 +107,12 @@
 **Descripción**: Permitir especificar directorio de salida vía flag CLI `--output-dir` o variable de entorno.
 
 **Criterios de validación**:
-- Default: directorio de trabajo actual (`process.cwd()`)
-- Flag: `--output-dir <path>` o `-o <path>`
+- Default: carpeta `downloads/` en el directorio de trabajo actual (ver RF-011)
+- Flag: `--output-dir <path>` o `-o <path>` sobrescribe el default
 - Validar que directorio existe y es escribible
-- Crear directorio si no existe (opcional `--create-dir`)
+- Crear directorio si no existe (opcional `--create-dir`; `downloads/` siempre se crea con `mkdir recursive`)
 
-**Trazabilidad**: SPECS.md §1
+**Trazabilidad**: SPECS.md §1, RF-011
 
 ---
 
@@ -120,6 +125,32 @@
 - Incluir en logs (INFO)
 
 **Trazabilidad**: SPECS.md §1
+
+---
+
+### RF-009: Opción de menú interactivo para descargar biblioteca
+**Descripción**: El CLI debe incluir una opción en el menú interactivo que inicie el flujo de descarga de canciones guardadas.
+
+**Criterios de validación**:
+- El menú interactivo debe mostrar la opción "3. Descargar biblioteca"
+- Al seleccionar la opción, debe verificarse que hay tokens guardados (sino, indicar al usuario que ejecute "spoty connect" primero)
+- Al seleccionar la opción, debe llamarse al flujo `downloadSongs()` con las opciones correspondientes
+- El resultado debe mostrar mensaje de éxito con la cantidad de tracks y la ruta del archivo, o mensaje de error
+
+**Trazabilidad**: SPECS.md §3.1, ARCHITECTURE.md ADR-001
+
+---
+
+### RF-011: Carpeta `downloads/` por defecto con fecha y hora
+**Descripción**: Si no se especifica `outputDir`, el archivo debe guardarse en `./downloads/` con el formato de RF-002.
+
+**Criterios de validación**:
+- Ruta resultante: `<cwd>/downloads/YYYY-MM-DD_HH-mm-ss-download_songs.json`
+- La carpeta `downloads/` se crea automáticamente si no existe (`mkdir recursive`)
+- `options.outputDir` / `--output-dir` sobrescribe este default
+- El mensaje de éxito muestra la ruta completa incluyendo `downloads/`
+
+**Trazabilidad**: SPECS.md §1, §2, RB-017
 
 ---
 
@@ -173,6 +204,23 @@
 
 ---
 
+### RNF-006: Registro del proceso en `data/app.log`
+**Descripción**: El proceso de descarga debe registrar eventos en `data/app.log` para diagnóstico ante errores.
+
+**Criterios de validación**:
+- Eventos mínimos (append, una línea por evento con timestamp ISO):
+  - inicio: `Iniciando descarga de biblioteca Spotify`
+  - tracks: `Tracks obtenidos: <N>`
+  - éxito: `Descarga completada: <filePath> (<N> tracks)`
+  - error: `Error durante descarga: <mensaje>`
+- Fallo de logging nunca bloquea la descarga
+- Crear carpeta `data/` si no existe
+- Nunca registrar tokens (ver RNF-003)
+
+**Trazabilidad**: SPECS.md §2, §6, RB-018
+
+---
+
 ## Matriz de Trazabilidad Resumen
 
 | Req | SPECS | Caso de Uso | Criterio Aceptación | Test |
@@ -180,13 +228,17 @@
 | RF-001 | §4, §5 | UC-001 | AC-001, AC-002 | download-songs.test.ts |
 | RF-002 | §1, §4 | UC-001 | AC-003 | download-songs.test.ts |
 | RF-003 | §4 | UC-001 | AC-004 | download-songs.test.ts |
-| RF-004 | §6 | UC-002 | AC-005 | rate-limit.test.ts |
-| RF-005 | §6 | UC-003 | AC-006 | token-refresh.test.ts |
+| RF-004 | §6 | UC-002 | AC-005, AC-014 | rate-limit.test.ts |
+| RF-005 | §6 | UC-003 | AC-006, AC-011 | token-refresh.test.ts |
 | RF-006 | §1 | UC-001 | AC-007 | download-songs.test.ts |
-| RF-007 | §1 | UC-004 | AC-008 | cli-options.test.ts |
-| RF-008 | §1 | UC-001 | AC-009 | download-songs.test.ts |
+| RF-007 | §3.1 | UC-006 | AC-008 | cli-options.test.ts |
+| RF-008 | §1 | UC-004 | AC-009 | cli-options.test.ts |
+| RF-009 | §3.1 | UC-006 | AC-015, AC-016 | cli-options.test.ts |
+| RF-010 | §6 | UC-005 | AC-012 | security.test.ts |
+| RF-011 | §1, §2 | UC-001 | AC-003, AC-017 | download-songs.test.ts |
 | RNF-001 | §6 | - | - | perf.test.ts |
 | RNF-002 | §6 | - | - | perf.test.ts |
 | RNF-003 | §8 | - | AC-010 | security.test.ts |
 | RNF-004 | §6 | - | - | CI pipeline |
 | RNF-005 | §6 | - | - | lint + test |
+| RNF-006 | §2, §6 | UC-001 | AC-018 | security.test.ts |

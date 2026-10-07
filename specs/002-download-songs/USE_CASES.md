@@ -1,8 +1,11 @@
 # Casos de Uso: Descarga de Biblioteca de Canciones
 
 ## Actores
-- **Usuario Autenticado**: Usuario que ya completó el flujo OAuth y tiene tokens válidos guardados
-- **Sistema (spoty CLI)**: Aplicación que orquesta la descarga
+
+| Actor | Descripción | Tipo |
+|-------|-------------|------|
+| Usuario Autenticado | Usuario que ya completó el flujo OAuth y tiene tokens válidos guardados | Primario |
+| Sistema (spoty CLI) | Aplicación que orquesta la descarga | Sistema |
 
 ---
 
@@ -15,7 +18,7 @@
 - Espacio en disco suficiente (> 50MB para 3000 tracks)
 
 ### Flujo Principal
-1. Usuario ejecuta `spoty download-songs` (o opción 4 en menú interactivo)
+1. Usuario ejecuta `spoty download-songs` (o opción 3 en menú interactivo)
 2. Sistema valida sesión existente (reutiliza `checkExistingSession()`)
 3. Sistema obtiene access token válido (refresh si necesario)
 4. Sistema inicia descarga paginada:
@@ -24,10 +27,10 @@
    - Si `next !== null`: request siguiente página con `offset += 50`
    - Repetir hasta `next === null`
 5. Sistema transforma datos a estructura JSON de salida (SPECS.md §4)
-6. Sistema genera nombre archivo: `YYYY-MM-DD-download_songs.json`
-7. Sistema escribe archivo en directorio de trabajo (o `--output-dir`)
+6. Sistema genera nombre archivo: `YYYY-MM-DD_HH-mm-ss-download_songs.json` (fecha/hora de inicio, ej: `2026-10-06_14-30-45-download_songs.json`)
+7. Sistema escribe archivo en carpeta `downloads/` por defecto (o `--output-dir` / `outputDir` si se especifica); crea la carpeta con `mkdir recursive`
 8. Sistema muestra mensaje éxito con ruta archivo y estadísticas
-9. Sistema loggea `INFO` en `data/app.log` con resumen
+9. Sistema registra en `data/app.log`: inicio de descarga, tracks obtenidos, descarga completada con ruta; ante error registra `Error durante descarga: <mensaje>`
 
 ### Flujos Alternativos
 
@@ -47,16 +50,16 @@
 - Opcional: flag `--force` para confirmar, `--no-clobber` para error
 
 ### Postcondiciones
-- Archivo `YYYY-MM-DD-download_songs.json` existe y es JSON válido
+- Archivo `downloads/YYYY-MM-DD_HH-mm-ss-download_songs.json` existe y es JSON válido
 - Contiene todos los tracks de la biblioteca al momento de descarga
 - `metadata.totalTracks` == número real de tracks descargados
-- Log en `data/app.log` registra operación exitosa
+- Log en `data/app.log` registra inicio, tracks obtenidos y operación exitosa (o error)
 - Sesión OAuth intacta (tokens no modificados)
 
 ### Reglas de Negocio
 - **RB-001**: Scope `user-library-read` debe estar presente en token
 - **RB-002**: Máximo 50 tracks por request (límite API Spotify)
-- **RB-003**: Fecha en nombre de archivo = fecha inicio descarga (no fin)
+- **RB-003**: Fecha y hora en nombre de archivo = fecha/hora inicio descarga (formato `YYYY-MM-DD_HH-mm-ss`)
 - **RB-004**: `addedAt` preservado tal cual de API (ISO 8601 UTC)
 
 ---
@@ -185,30 +188,100 @@
 
 ---
 
+## UC-006: Opción de Menú Interactivo para Descargar Biblioteca
+
+### Precondiciones
+- Usuario está en el menú interactivo de spoty
+- Opción 3 "Descargar biblioteca" ha sido seleccionada
+- (Opcional) Sesión válida con tokens guardados
+
+### Flujo Principal
+1. Usuario selecciona la opción 3 "Descargar biblioteca" en el menú interactivo
+2. Sistema verifica la existencia de tokens guardados mediante `getStoredTokens()`
+3. Si no hay tokens: muestra mensaje de error "Configuración requerida. Ejecuta "spoty connect" para configurar." y regresa al menú
+4. Si hay tokens: sistema inicia el flujo de descarga ejecutando `downloadSongs({})`
+5. Sistema muestra sección "Descargando biblioteca..." en consola
+6. Se ejecuta la descarga paginada (mismo flujo que `spoty download-songs`)
+7. Al completar: muestra mensaje "¡Descarga completada! X tracks guardados en downloads/YYYY-MM-DD_HH-mm-ss-download_songs.json"
+8. Regresa al menú principal después de completar o cancelar
+
+### Flujos Alternativos
+
+#### FA-001: Usuario sin sesión activa
+- En paso 2, no hay tokens guardados
+- Mostrar error: "Primero debes conectar con Spotify usando la opción 1."
+- Regresar al menú principal sin iniciar descarga
+
+#### FA-002: Cancelación durante la descarga desde el menú
+- Igual que FA-001 de UC-005 (Ctrl+C durante la descarga)
+- El sistema debe manejar la señal SIGINT correctamente
+- No debe dejar archivo parcial creado
+
+### Postcondiciones
+- Si éxito: archivo `downloads/YYYY-MM-DD_HH-mm-ss-download_songs.json` existe con todos los tracks
+- Si cancelación: no existe archivo parcial, sesión intacta
+- Regresa al menú principal de spoty
+
+### Flujos de Excepción
+- **UC-001**: Biblioteca vacía (0 tracks), Directorio personalizado, Sobrescritura de archivo
+- **UC-002**: Rate limit persistente (5 reintentos fallados), Agotamiento de reintentos
+- **UC-003**: Refresh token expirado, Error de red durante refresh
+- **UC-004**: Directorio no escribible, Path traversal attempt
+- **UC-005**: Cancelación por usuario (Ctrl+C), Archivo parcial no creado
+- **UC-006**: Usuario sin sesión activa, Cancelación durante descarga desde menú
+
+### Reglas de Negocio
+- **RB-001**: Scope `user-library-read` debe estar presente en token
+- **RB-002**: Máximo 50 tracks por request (límite API Spotify)
+- **RB-003**: Fecha y hora en nombre de archivo = fecha/hora inicio descarga (formato `YYYY-MM-DD_HH-mm-ss`)
+- **RB-004**: `addedAt` preservado tal cual de API (ISO 8601 UTC)
+- **RB-005**: Respetar `Retry-After` siempre (no asumir valor fijo)
+- **RB-006**: Backoff exponencial con jitter (±10%) para evitar thundering herd
+- **RB-007**: Contador de reintentos por request individual (no global)
+- **RB-008**: Refresh automático transparente al usuario (sin prompt)
+- **RB-009**: Nuevo refresh_token (si viene) debe persistirse
+- **RB-010**: Tracks ya descargados en memoria se conservan durante refresh
+- **RB-011**: La opción 3 solo está disponible después de conectar (tener tokens)
+- **RB-012**: El flujo por menú interactivo es idéntico al flujo por comando
+- **RB-013**: Después de completar, el menú vuelve a mostrarse para nuevas operaciones
+- **RB-014**: La opción 0 sale de la aplicación
+- **RB-015**: Validación de directorio de salida no escribible
+- **RB-016**: Cancelación con Ctrl+C no deja archivo parcial
+- **RB-017**: Archivo se guarda en `downloads/` por defecto; `outputDir` lo sobrescribe
+- **RB-018**: Cada descarga registra en `data/app.log`: inicio, tracks obtenidos, completada/error
+
+### Checklist de Validación
+- [ ] Actores identificados
+- [ ] Precondiciones claras
+- [ ] Flujo principal completo
+- [ ] Alternativas cubiertas
+- [ ] Excepciones manejadas
+- [ ] Postcondiciones verificables
+- [ ] Reglas de negocio referenciadas
+
+---
+
+---
+
 ## Diagrama de Casos de Uso (Mermaid)
 
 ```mermaid
-useCaseDiagram
+graph TD
     actor "Usuario Autenticado" as User
     package "spoty CLI" {
         usecase "UC-001: Descarga exitosa" as UC1
-        usecase "UC-002: Rate Limit handling" as UC2
-        usecase "UC-003: Token refresh" as UC3
-        usecase "UC-004: Directorio personalizado" as UC4
-        usecase "UC-005: Cancelación usuario" as UC5
+        usecase "UC-002: Manejo de Rate Limit" as UC2
+        usecase "UC-003: Refresh de Token" as UC3
+        usecase "UC-004: Directorio Personalizado" as UC4
+        usecase "UC-005: Cancelación Usuario" as UC5
+        usecase "UC-006: Opción Menú Interactivo" as UC6
     }
     
     User --> UC1
     User --> UC4
     User --> UC5
     
-    UC1 .> UC2 : «include»\n(puede ocurrir durante)
-    UC1 .> UC3 : «include»\n(puede ocurrir durante)
+    UC1 .> UC2 : «include»
+    UC1 .> UC3 : «include»
     UC4 .> UC1 : «extends»
-    
-    note right of UC1 : Flujo principal\ndescarga completa
-    note right of UC2 : HTTP 429 +\nRetry-After + backoff
-    note right of UC3 : HTTP 401 +\nrefresh token flow
-    note right of UC4 : Flag --output-dir
-    note right of UC5 : SIGINT (Ctrl+C)
 ```

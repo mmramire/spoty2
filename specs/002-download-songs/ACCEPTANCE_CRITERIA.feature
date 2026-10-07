@@ -1,18 +1,19 @@
 # language: es
 
 @download-songs @happy-path
-Característica: Descarga de biblioteca de canciones guardadas
+Feature: Descarga de biblioteca de canciones guardadas
   Como usuario autenticado de Spotify
   Quiero descargar mi biblioteca completa de canciones guardadas ("Me gusta")
-  Para tener un respaldo local en formato JSON con fecha de descarga
+  Para tener un respaldo local en formato JSON con fecha y hora de descarga en carpeta downloads
+
+Background:
+  Dado sesión válida de Spotify con scope "user-library-read"
 
   @AC-001 @must
-  Escenario: Descarga exitosa de biblioteca con tracks
-    Dado que tengo una sesión válida de Spotify con scope "user-library-read"
-    Y mi biblioteca tiene 150 canciones guardadas
+  Scenario: Descarga exitosa de biblioteca con tracks
     Cuando ejecuto "spoty download-songs"
     Entonces el comando finaliza con código de salida 0
-    Y se crea un archivo "YYYY-MM-DD-download_songs.json" en el directorio actual
+    Y se crea un archivo "YYYY-MM-DD_HH-mm-ss-download_songs.json" en la carpeta downloads
     Y el archivo contiene JSON válido con estructura:
       | campo              | tipo     | descripción                    |
       | metadata           | objeto   | metadatos de la descarga       |
@@ -26,30 +27,25 @@ Característica: Descarga de biblioteca de canciones guardadas
       | campo       | tipo     | descripción                    |
       | addedAt     | string   | cuándo guardé la canción       |
       | track       | objeto   | TrackObject completo Spotify   |
-    Y se muestra en consola: "¡Descarga completada! 150 tracks guardados en YYYY-MM-DD-download_songs.json"
+    Y se muestra en consola: "¡Descarga completada! 150 tracks guardados en YYYY-MM-DD_HH-mm-ss-download_songs.json"
     Y en data/app.log hay entrada INFO con "Download completed: 150 tracks"
 
   @AC-002 @must
-  Escenario: Descarga de biblioteca vacía (0 tracks)
-    Dado que tengo una sesión válida de Spotify
-    Y mi biblioteca no tiene canciones guardadas (0 tracks)
+  Scenario: Descarga de biblioteca vacía (0 tracks)
     Cuando ejecuto "spoty download-songs"
     Entonces el comando finaliza con código de salida 0
-    Y se crea un archivo "YYYY-MM-DD-download_songs.json"
+    Y se crea un archivo "YYYY-MM-DD_HH-mm-ss-download_songs.json"
     Y el archivo contiene: {"metadata":{"totalTracks":0,...},"tracks":[]}
     Y se muestra en consola: "Tu biblioteca está vacía. Archivo creado con 0 tracks."
 
   @AC-003 @must
-  Escenario: Nombre de archivo incluye fecha actual en formato ISO
-    Dado que hoy es 15 de enero de 2026
-    Y tengo una sesión válida con canciones guardadas
+  Scenario: Nombre de archivo incluye fecha y hora actual
     Cuando ejecuto "spoty download-songs"
-    Entonces el archivo creado se llama "2026-01-15-download_songs.json"
-    Y el campo metadata.downloadedAt contiene timestamp de hoy (ej: "2026-01-15T14:30:45.123Z")
+    Entonces el archivo creado se llama "2026-10-06_14-30-45-download_songs.json" (fecha/hora de inicio)
+    Y el campo metadata.downloadedAt contiene timestamp de hoy (ej: "2026-10-06T14:30:45.123Z")
 
   @AC-004 @must
-  Escenario: Estructura de track incluye todos los campos requeridos
-    Dado que tengo una sesión válida con al menos 1 canción guardada
+  Scenario: Estructura de track incluye todos los campos requeridos
     Cuando ejecuto "spoty download-songs"
     Entonces cada track en el JSON tiene:
       | campo track            | presente | ejemplo                           |
@@ -66,8 +62,7 @@ Característica: Descarga de biblioteca de canciones guardadas
 
   @AC-005 @must
   Escenario: Manejo de rate limit HTTP 429 con Retry-After
-    Dado que tengo una sesión válida
-    Y la API de Spotify devuelve HTTP 429 con cabecera "Retry-After: 2" en la 3ra página
+    Dado la API de Spotify devuelve HTTP 429 con cabecera "Retry-After: 2" en la 3ra página
     Cuando ejecuto "spoty download-songs"
     Entonces el sistema espera 2 segundos y reintenta la misma request
     Y si el reintento tiene éxito, continúa la descarga normalmente
@@ -76,8 +71,7 @@ Característica: Descarga de biblioteca de canciones guardadas
 
   @AC-006 @must
   Escenario: Refresh automático de token expirado durante descarga
-    Dado que tengo una sesión válida pero el access token expira en 30 segundos
-    Y la descarga tarda 45 segundos (múltiples páginas)
+    Dado el access token expira durante la descarga (HTTP 401 en request de paginación)
     Cuando ejecuto "spoty download-songs"
     Y en la página 3 la API devuelve HTTP 401
     Entonces el sistema usa el refresh token para obtener nuevo access token
@@ -95,14 +89,14 @@ Característica: Descarga de biblioteca de canciones guardadas
       | "Descargados 50 de ~500 tracks..."  | cada página (50)     |
       | "Descargados 100 de ~500 tracks..." | cada página (50)     |
       | ...                                 | ...                  |
-    Y al finalizar: "¡Descarga completada! 500 tracks guardados en YYYY-MM-DD-download_songs.json"
+    Y al finalizar: "¡Descarga completada! 500 tracks guardados en YYYY-MM-DD_HH-mm-ss-download_songs.json"
 
   @AC-008 @could
   Escenario: Directorio de salida personalizado con --output-dir
     Dado que tengo una sesión válida
     Y existe el directorio "/tmp/spotify-backups"
     Cuando ejecuto "spoty download-songs --output-dir /tmp/spotify-backups"
-    Entonces el archivo se crea en "/tmp/spotify-backups/YYYY-MM-DD-download_songs.json"
+    Entonces el archivo se crea en "/tmp/spotify-backups/YYYY-MM-DD_HH-mm-ss-download_songs.json"
     Y se muestra la ruta completa en el mensaje de éxito
 
   @AC-009 @could
@@ -143,7 +137,7 @@ Característica: Descarga de biblioteca de canciones guardadas
     Y presiono Ctrl+C durante la descarga (página 5 de 20)
     Entonces el comando termina con código 130
     Y se muestra: "Descarga cancelada por el usuario"
-    Y NO existe archivo YYYY-MM-DD-download_songs.json
+    Y NO existe archivo nuevo en downloads/YYYY-MM-DD_HH-mm-ss-download_songs.json
     Y en data/app.log hay entrada WARN: "Download cancelled by user at track 250/1000"
 
   @AC-013 @must
@@ -161,7 +155,7 @@ Característica: Descarga de biblioteca de canciones guardadas
     Cuando ejecuto "spoty download-songs"
     Entonces los tiempos de espera son aproximadamente:
       | reintento | espera esperada (segundos) |
-      | 1         | Retry-Ather (ej: 1)        |
+      | 1         | 1                          |
       | 2         | 2                          |
       | 3         | 4                          |
       | 4         | 8                          |
@@ -179,6 +173,68 @@ Característica: Descarga de biblioteca de canciones guardadas
   @AC-016 @should
   Escenario: Comando disponible en menú interactivo
     Dado que ejecuto "spoty" sin argumentos (modo interactivo)
-    Cuando selecciono la opción "Descargar biblioteca"
+    Cuando selecciono la opción 3 "Descargar biblioteca"
     Entonces se ejecuta el mismo flujo que "spoty download-songs"
     Y vuelve al menú principal tras completar
+
+  @AC-017 @must
+  Escenario: Archivo se guarda en carpeta downloads por defecto
+    Dado que tengo una sesión válida
+    Y no especifico --output-dir
+    Cuando ejecuto "spoty download-songs"
+    Entonces la carpeta "downloads/" existe (creada si era necesario)
+    Y el archivo se crea en "downloads/YYYY-MM-DD_HH-mm-ss-download_songs.json"
+    Y el mensaje de éxito incluye la ruta con "downloads/"
+
+  @AC-018 @must
+  Escenario: Proceso registra eventos en data/app.log
+    Dado que tengo una sesión válida
+    Cuando ejecuto "spoty download-songs"
+    Entonces en data/app.log hay entrada con "Iniciando descarga de biblioteca Spotify"
+    Y en data/app.log hay entrada con "Tracks obtenidos:"
+    Y en data/app.log hay entrada con "Descarga completada:" y la ruta del archivo
+    Y cuando la descarga falla, en data/app.log hay entrada con "Error durante descarga:"
+
+## Matriz de Cobertura
+
+| Requerimiento | Escenario Gherkin | Estado |
+|---------------|-------------------|--------|
+| RF-001 | Scenario: Descarga exitosa de biblioteca con tracks | Pendiente |
+| RF-002 | Scenario: Nombre de archivo incluye fecha y hora actual | Pendiente |
+| RF-011 | Escenario: Archivo se guarda en carpeta downloads por defecto | Pendiente |
+| RNF-006 | Escenario: Proceso registra eventos en data/app.log | Pendiente |
+| RF-003 | Scenario: Estructura de track incluye todos los campos requeridos | Pendiente |
+| RF-004 | Scenario: Manejo de rate limit HTTP 429 con Retry-After | Pendiente |
+| RF-005 | Scenario: Refresh automático de token expirado durante descarga | Pendiente |
+| RNF-001 | Scenario: Performance < 60s para 3000 tracks | Pendiente |
+
+## Definiciones de Steps (Referencia para Implementación)
+
+```typescript
+// steps/download-songs.steps.ts
+import { Given, When, Then } from '@cucumber/cucumber';
+
+Given(' sesión válida de Spotify con scope "user-library-read"', async function () {
+  // Implementación
+});
+
+When('ejecuto "spoty download-songs"', async function () {
+  // Implementación
+});
+
+Entonces('el comando finaliza con código de salida 0', async function () {
+  // Implementación
+});
+
+Entonces('se crea un archivo "YYYY-MM-DD_HH-mm-ss-download_songs.json"', async function () {
+  // Implementación
+});
+```
+
+## Checklist de Validación
+- [ ] Todos los RF cubiertos por al menos un escenario
+- [ ] Escenarios de error incluidos
+- [ ] Background usado para setup común
+- [ ] Tags para filtrado (@smoke, @regression, @feature)
+- [ ] Scenario Outline para datos variables
+- [ ] Steps reutilizables identificados

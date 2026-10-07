@@ -1,6 +1,16 @@
 # Arquitectura: Descarga de Biblioteca de Canciones
 
-## Decisiones Arquitectónicas (ADRs)
+## 1. Resumen Ejecutivo
+- **Feature**: download-songs
+- **Versión**: 1.0.0
+- **Fecha**: 2026-01-15
+- **Autor**: Equipo spoty
+- **Estado**: Aprobado
+
+## 2. Contexto y Motivación
+Agregar nueva funcionalidad `download-songs` al CLI spoty existente para permitir a usuarios autenticados descargar su biblioteca completa de canciones guardadas ("Me gusta") en un archivo JSON local en carpeta `downloads/` con prefijo de fecha y hora (`YYYY-MM-DD_HH-mm-ss-download_songs.json`), registrando el proceso en `data/app.log`. Esta especificación 002 cubre el diseño arquitectónico completo desde la capa de presentación hasta la persistencia de archivos, decisiones críticas de seguridad y consideraciones de performance y memoria.
+
+## 3. Decisiones Arquitectónicas (ADRs)
 
 ### ADR-001: Arquitectura N-Tier Pura (Presentation → Business → Data)
 **Estado**: Aceptado  
@@ -11,7 +21,6 @@
 - -0 complejidad en Business (se mantiene limpia) 
 - +Facilidad para tests unitarios con mocks puros
 - -Levemente más archivos para navegar
-
 **Alternativas consideradas y rechazadas**:
 - *Lógica HTTP en Business*: Violaría la regla N-Tier y dificultaría tests
 - *Estructura plana*: Perdería la separación de concerns y reutilización
@@ -27,12 +36,10 @@
 3. Jitter aleatorio ±10% para evitar "thundering herd" si múltiples instancias fallan simultáneamente
 4. Máximo 5 reintentos por request individual (no global)
 5. Log WARN cada reintento con contador: "Retry X/5 después de Ys"
-
 **Consecuencias**:
 - +Alta tolerancia a fallos temporales de Spotify
 - -Lógica más compleja (estado por request: retryCount, nextRetryAt)
 - +Tests unitarios con reloj falso posibles (vitest advanceTimers)
-
 **Alternativas consideradas y rechazadas**:
 - *Fijo Retry-After solo*: No escala si Spotify aumenta límites o hay picos
 - *Sin backoff*: Causaría bucle de fallos y bloqueo de la descarga
@@ -47,7 +54,6 @@
 - +Archivos siempre completos o ninguno (consistencia)
 - -Memoria: acumular 3000 track objects en RAM (~50-80MB, dentro de RNF-002)
 - +Código más simple (un solo writeFile al final)
-
 **Alternativas consideradas y rechazadas**:
 - *Write incremental cada N páginas*: Riesgo de archivo truncated si se corta energía; código más complejo con fs.createWriteStream + JSON stream
 
@@ -63,14 +69,27 @@
   - Archivo JSON generado (`download_songs.json`)
 - Sanitización activa: si un log capturase accidentalmente un objeto con token, se haría `redact` antes de escribir
 - Tests explícitos que grepeen output por patrones `Bearer eyJ` o `refresh_token`
-
 **Consecuencias**:
 - +Cumplimiento rules.md #12 y constitution.md #8
 - -Necesidad de funciones wrapper `safeLog()` y `redactToken()` en todo el código
 - +Peace of mind para distribución a usuarios no técnicos
-
 **Alternativas consideradas y rechazadas**:
 - *Loguear tokens para debugging en producción*: Violación severa de TOS Spotify y políticas de seguridad
+
+---
+
+### ADR-006: Carpeta `downloads/` + nombre con fecha-hora + log en `data/app.log`
+**Estado**: Aceptado
+**Contexto**: Evitar mezclar respaldos con archivos del proyecto, permitir múltiples descargas por día sin colisión, y poder diagnosticar fallos.
+**Decisión**:
+1. Default `outputDir = <cwd>/downloads/`; crear con `mkdir recursive`.
+2. Nombre `YYYY-MM-DD_HH-mm-ss-download_songs.json` (hora local, `:` → `-`, sin ms ni `Z`).
+3. Log append en `data/app.log` (crear `data/` si falta): inicio, tracks obtenidos, completada con ruta, error. El fallo de logging nunca bloquea la descarga.
+**Consecuencias**:
+- +Orden en FS y trazabilidad ante errores
+- -Una carpeta más en el repo (ignorar en git si se desea salvo `.gitkeep`)
+**Alternativas consideradas y rechazadas**:
+- *Guardar en cwd*: mezcla respaldos con código y colisiona si hay 2 descargas el mismo día.
 
 ---
 
@@ -82,113 +101,106 @@
 - `tsconfig.json`: `strict: true`, `noImplicitAny: true`, `skipLibCheck: true`
 - Archivos .ts transpilados a .js en `dist/`
 - Vitest como test runner (compatibilidad nativa con ESM)
-
 **Consecuencias**:
 - +Compatibilidad con Node.js 22+ features nativas
 - -Curva de aprendizaje para desenvoltura en ESM si no está acostumbrado
 - +Futuro-proof: Node.js 22+ es la dirección oficial
-
 **Alternativas consideradas y rechazadas**:
 - *CommonJS (`"type": "commonjs"`)*: Incompatibilidad con imports modernos del SDK `@spotify/web-api-ts-sdk`
 
 ---
 
-## Diagrama de Componentes
+## 4. Vista de Componentes
 
 ```mermaid
-componentDiagram
-    attr CLI "Presentation Layer\n- src/presentation/\n- console.ts, prompts.ts\n- CLI args (--output-dir)"
-    attr BUSINESS "Business Layer\n- src/business/\n- auth/ flow, types, errors\n- download-songs orchestrator"
-    attr DATA "Data Layer\n- src/data/\n- http/ spotify-client.ts\n- storage/ tokens-file.ts\n- logging/ pino-setup.ts\n- Spotify API"
-    attr FS "File System\n- data/tokens.json\n- *.json (output)\n- data/app.log"
-    
+graph TD
+    CLI["Presentation Layer\n- src/presentation/\n- console.ts, prompts.ts\n- CLI args (--output-dir)"]
+    BUSINESS["Business Layer\n- src/business/\n- auth/ flow, types, errors\n- download-songs orchestrator"]
+    DATA["Data Layer\n- src/data/\n- http/ spotify-client.ts\n- storage/ tokens-file.ts\n- logging/ pino-setup.ts\n- Spotify API"]
+    FS["File System\n- data/tokens.json\n- downloads/*.json (output)\n- data/app.log"]
+
     CLI --> BUSINESS : invoke download-songs()
     BUSINESS --> DATA : getValidToken(), fetchAllSavedTracks()
     DATA --> Spotify : GET /me/tracks?limit=50&offset=X
     DATA --> FS : writeFile(JSON), appendLog()
     DATA --> DATA : backoff exponential, pagination logic
-    
-    note for CLI "Sin lógica HTTP\nSolo orchestration"
-    note for BUSINESS "Función pura:\ndownloadSongs(options)\nRetorna Track[] + metadata"
-    note for DATA "100% reutilizable\npor cliente web futuro"
 ```
 
----
+## 5. Vista de Datos
 
-## Flujo de Datos Detallado
-
+### Modelo de Datos
 ```mermaid
-flowchart TD
-    A[CLI: spoty download-songs] -->|parse args| B[Business: downloadSongs(options)]
-    B -->|getValidAccessToken()| C[Data: getStoredTokens()]
-    C -- token vencido? -->|refresh| D[Data: refreshAccessToken()]
-    D -->|new tokens| C
-    C -- OK --> E[Data: fetchAllSavedTracks(accessToken)]
-    
-    E -->|request page 1| F[Spotify API: GET /me/tracks?limit=50&offset=0]
-    F -->|200 OK + items + next| G[Data: accumulate tracks]
-    F -->|429 Rate Limit| H[Data: wait Retry-Afters + backoff]
-    F -->|401 Token Expired| I[Data: refreshAccessToken() < retry request]
-    
-    G -->|next !== null| J[Data: request siguiente página offset+=50]
-    G -->|next === null| K[Data: allTracks accumulated]
-    
-    K --> L[Business: transform to output JSON structure]
-    L --> M[FS: writeFile(YYYY-MM-DD-download_songs.json)]
-    M --> N[CLI: success message + file path]
-    
-    H -->|retry OK| F
-    H -->|5 reintents fallados| O[Business: error rate limit]
-    I -->|refresh OK| F
-    I -->|refresh fallado| P[Business: error session expired, delete tokens]
-    
-    O --> Q[CLI: exit code 1 + mensaje]
-    P --> R[CLI: exit code 2 + "reconectar"]
-    Q --> R
+erDiagram
+    TRACK ||--|{ ARTIST : has
+    TRACK ||--|{ ALBUM : belongs_to
+    TRACK {
+        string id
+        string name
+        integer durationMs
+        boolean explicit
+        integer popularity
+        string isrc
+        json artists
+        json album
+        string externalUrls
+        string previewUrl
+        string uri
+        timestamp addedAt
+    }
+    ALBUM {
+        string id
+        string name
+        date releaseDate
+        string releaseDatePrecision
+        integer totalTracks
+        json images
+    }
+    ARTIST {
+        string id
+        string name
+        json externalUrls
+    }
+    METADATA {
+        timestamp downloadedAt
+        integer totalTracks
+        string spotifyUserId
+        string spotifyDisplayName
+        string version
+    }
 ```
 
----
-
-## Estructura de Capas Detalle
-
-### Presentation Layer (src/presentation/)
-- `console.ts`: funciones de UI (spinner, error, messages en español)
-- `prompts.ts`: entrada de usuario (prompt, confirm, menu choices)
-- `messages.ts`: strings constantes i18n (español)
-- CLI entry: `src/cli.ts` - main(), handleCommand(), parse args (`--output-dir`)
-
-### Business Layer (src/business/)
-- `auth/`: funciones existentes (checkExistingSession, runAuthFlow, getUserProfile, types, errors)
-- **Nueva**: `downloadSongs.ts` - la única función exportada
-  - `interface DownloadSongsOptions { outputDir?: string; force?: boolean }`
-  - `async function downloadSongs(options: DownloadSongsOptions): Promise<DownloadResult>`
-  - Retorna: `{ success: true, filePath, totalTracks }` o `{ success: false, error }`
-  - **Regla estricta**: Sin `console.log`, sin `fs.writeFileSync`, sin imports HTTP
-  - **Regla estricta**: Solo lógica de negocio (transformación, validación, orquestación)
-
-### Data Layer (src/data/)
-- **Existente**: `spotify-client.ts` - HTTP client puro (fetch, createAccessToken, exchangeCodeForTokens, refreshAccessToken, fetchUserProfile)
-- **Existente**: `tokens-file.ts` - lectura/escritura `data/tokens.json` con permisos 0o600
-- **Nueva**: `download-songs.service.ts` - orquestación de paginación, rate limits, backoff
-  - `async function fetchAllSavedTracks(accessToken: string): Promise<TrackObject[]>`
-  - Maneja todo el ciclo: request → response → rate limit → pagination → accumulate
-  - **Regla**: Este es el "cerebro" de la descarga, 100% testable sin mocks de FS
+### Migraciones / Esquemas
+- No aplica (archivos JSON en FS, sin base de datos)
+- Estructura validada por el esquema JSON en SPECS.md §4
 
 ---
 
-## Endpoints y Scopes Mapeo
+## 6. Vista Despliegue
+```mermaid
+graph LR
+    CLI["spoty CLI (Node.js 22+)"]
+    BUSINESS["Business Layer"]
+    DATA["Data Layer - Spotify Client"]
+    SPOTIFY["Spotify API"]
+    FS["File System local"]
 
-| Componente | Endpoint | Método | Scope | Documentación |
-|------------|----------|--------|-------|---------------|
-| `spotify-client.ts` | `/me/tracks` | GET | `user-library-read` | rules.md §5 + OpenAPI spec |
-| `spotify-client.ts` | `/me/profile` | GET | `user-read-email` | Ya existe, reutilizado |
-| Nueva funcionalidad | `/me/tracks` | GET | `user-library-read` | Nuevo endpoint para descarga |
+    CLI --> BUSINESS : handleCommand()
+    BUSINESS --> DATA : getValidToken(), fetchAllSavedTracks()
+    DATA --> SPOTIFY : GET /me/tracks?limit=50&offset=X
+    DATA --> FS : writeFile(JSON), appendLog()
+```
 
-**Nota**: El scope `user-library-read` debe solicitarse en el flujo OAuth. Revisar SPECS.md §5 para detalles de scopes en el flujo connect existente.
+## 7. Vista de Seguridad
+- **Autenticación**: OAuth 2.0 con flow de Authorization Code + PKCE
+- **Autorización**: Scope `user-library-read` solicitado en connect flow
+- **Cifrado**: Tokens almacenados en `data/tokens.json` con permisos restrictivos (0o600)
+- **Auditoría**: Log de eventos de seguridad (login, logout, token refresh) SIN exponer valores de tokens
+- **Cumplimiento**: rules.md #12, constitution.md #8, TOS Spotify
+- **Mejores prácticas**: `safeLog()` wrapper, `redactToken()` function, validación path traversal en rutas de salida
 
 ---
 
-## Consideraciones de Performance y Memoria
+## 8. Vista Performance y Escalabilidad
 
 ### Cálculo de límite de páginas
 Para N tracks en Spotify (máx 50 por página):
@@ -210,52 +222,58 @@ Para N tracks en Spotify (máx 50 por página):
 
 ---
 
-## Trazabilidad a Tests
+## 9. Observabilidad
 
-| Componente | Test File | Cobertura Mínima |
-|------------|-----------|------------------|
-| `downloadSongs()` (Business) | `tests/business/download-songs.test.ts` | 100% funciones expuestas |
-| `fetchAllSavedTracks()` (Data) | `tests/data/download-songs.test.ts` | 100% pagination + rate limit + refresh |
-| `spotify-client.ts` (HTTP) | `tests/data/http/spotify-client.test.ts` (ya existe) | 100% existente |
-| Rate limit handler | `tests/business/retry/retry.test.ts` (ya existe) | 100% existente |
-| Seguridad (tokens en logs) | `tests/security/tokens.test.ts` (nuevo) | 100% grepeo output |
+### Métricas Clave
+- `downloads.total`: contador de descargas completadas
+- `downloads.failed`: contador de descargas fallidas
+- `downloads.rate_limit_retry`: total de reintentos por rate limit
+- `memory.heapUsed`: uso pico de memoria durante descarga
+- `api.request.duration`: latencia por request a Spotify API
 
----
+### Logs Estructurados
+- Append simple en `data/app.log` con timestamp ISO por línea
+- Eventos de descarga: inicio, tracks obtenidos, completada con ruta, error
+- Nivel WARN: rate limit hits, recuperación, cancelación
+- Nivel ERROR: fallos irreversibles
+- Nunca bloquear la descarga por fallo de logging; nunca loguear tokens
 
-## Lista de Checklist de Implementación
-
-### Fase 1: Implementación (después de aprobar specs)
-- [ ] Crear `src/business/download-songs.ts` - función `downloadSongs(options)`
-- [ ] Crear `src/data/download-songs.service.ts` - `fetchAllSavedTracks(accessToken)`
-- [ ] Crear `src/presentation/download-songs.prompts.ts` - mensajes UI específicos
-- [ ] Agregar flag `--output-dir` / `-o` en `src/cli.ts`
-- [ ] Agregar opción menú interactivo "5: Descargar biblioteca"
-
-### Fase 2: Testing
-- [ ] `npm run test` en verde en todos los tests nuevos
-- [ ] Tests de integración con mock server (vitest + msw o nock)
-- [ ] Tests de rate limit con reloj falso (vitest advanceTimers)
-- [ ] Tests de token refresh simulation
-
-### Fase 3: Calidad y Distribución
-- [ ] `npx biome check --write .` sin errores
-- [ ] `npm run lint` sin warnings
-- [ ] `tsc --noEmit` sin errores (strict mode)
-- [ ] Compilar: `npm run build` generar `dist/cli.js` ejecutable
-- [ ] Considerar packaging a binario único (constitution.md #7: SEA/pkg)
-
-### Fase 4: Documentación Final
-- [ ] Este ARCHITECTURE.md actualizado con decisiones
-- [ ] SPECS.md, REQUIREMENTS.md, USE_CASES.md, ACCEPTANCE_CRITERIA.feature en specs/002-download-songs/
-- [ ] Readme actualizado o sección nueva en docs/
-- [ ] Verificar que no haya `any` en TypeScript nuevo código
+### Trazabilidad
+- ID de sesión único por descarga
+- Correlación de logs entre capas (Presentation→Business→Data)
+- Guardado de `data/app.log` con rotación por tamaño
 
 ---
 
-## Próximas Posibles Mejoras (Fuera de Alcance Actual)
+## 10. Riesgos y Mitigaciones
 
-1. **Descarga incremental**: track nuevos desde última fecha de descarga (usar `addedAt` comparación)
-2. **Formato CSV/Excel**: para usuarios que no usan JSON
-3. **Compresión gzip**: archivo `.json.gz` para reducir tamaño
-4. **Filtros**: por artista, álbum, fecha rango durante la descarga
-5. **Cloud sync**: subir backup a Dropbox/Google Drive automático (requeriría backend seguro por ADR-003 de credenciales expuestas)
+| Riesgo | Probabilidad | Impacto | Mitigación |
+|--------|--------------|---------|------------|
+| Rate limit persistente (≥5 reintentos fallados) | Media | Alto (no se completa descarga) | Backoff exponencial con jitter, máximo 5 reintentos, error claro al usuario |
+| Token expira durante descarga larga | Alta | Medio (recovery via refresh) | Refresh automático transparente, manejo de refresh token expirado |
+| Memoria exceed 100MB | Baja | Alto (crash de proceso) | Acumulación controlada (<10MB), diseño all-or-nothing |
+| Pérdida de datos por interrupción (Ctrl+C) | Media | Alto (archivo parcial) | Señal SIGINT manejada, no se escribe archivo parcial, log WARN |
+| Path traversal en output directory | Baja | Medio (seguridad archivo) | Validación ruta resuelta, error "Ruta no permitida" |
+
+---
+
+## 11. Plan de Pruebas de Arquitectura
+
+- Pruebas unitarias de `downloadSongs()` (Business layer) - 100% funciones expuestas
+- Pruebas unitarias de `fetchAllSavedTracks()` (Data layer) - pagination + rate limit + refresh
+- Pruebas de integración con mock server (vitest + msw o nock) - todos los RF
+- Tests de rate limit con reloj falso (vitest advanceTimers) - backoff exponential
+- Tests de token refresh simulation - session expiration handling
+- Tests de seguridad: grepeo output por patrones de token
+
+---
+
+## 12. Checklist de Validación
+
+- [ ] ADRs documentadas y justificadas (ADR-001 a ADR-005)
+- [ ] Diagramas actualizados (Componentes, Datos, Despliegue, Seguridad)
+- [ ] Seguridad revisada (ADR-004, Vista Seguridad dedicada)
+- [ ] Performance validado (RNF-001, RNF-002 cálculosjustificados)
+- [ ] Observabilidad cubierta (métricas, logs estructurados, trazabilidad)
+- [ ] Riesgos identificados y mitigados (tabla 10.1)
+- [ ] Aprobado por Architecture Review Board
