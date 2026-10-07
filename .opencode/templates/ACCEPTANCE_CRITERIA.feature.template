@@ -1,0 +1,79 @@
+# Criterios de Aceptación (Gherkin/BDD): {{FEATURE_NAME}}
+
+@{{TAG_FEATURE}}
+Feature: {{NOMBRE_FEATURE}}
+  Como {{ACTOR}}
+  Quiero {{ACCION}}
+  Para {{BENEFICIO}}
+
+  Background:
+    Given {{CONTEXTO_INICIAL_COMUN}}
+    And {{PRECONDICION_ADICIONAL}}
+
+  @{{TAG_ESCENARIO_1}}
+  Scenario: {{NOMBRE_ESCENARIO_PRINCIPAL}}
+    Given {{DADO_QUE}}
+    When {{CUANDO}}
+    Then {{ENTONCES}}
+    And {{Y_TAMBIEN}}
+
+  @{{TAG_ESCENARIO_2}}
+  Scenario: {{NOMBRE_ESCENARIO_ALTERNATIVO}}
+    Given {{DADO_QUE_ALT}}
+    When {{CUANDO_ALT}}
+    Then {{ENTONCES_ALT}}
+
+  @{{TAG_ESCENARIO_3}}
+  Scenario Outline: {{NOMBRE_ESCENARIO_PARAMETRIZADO}}
+    Given {{DADO_QUE}} "<{{PARAM_1}}>" y "<{{PARAM_2}}>"
+    When {{CUANDO}} "<{{ACCION}}>"
+    Then {{ENTONCES}} "<{{RESULTADO_ESPERADO}}"
+
+    Examples:
+      | {{PARAM_1}} | {{PARAM_2}} | {{ACCION}} | {{RESULTADO_ESPERADO}} |
+      | {{VAL_1}}   | {{VAL_2}}   | {{ACC_1}}  | {{RES_1}}              |
+      | {{VAL_3}}   | {{VAL_4}}   | {{ACC_2}}  | {{RES_2}}              |
+
+  @{{TAG_ESCENARIO_ERROR}}
+  Scenario: {{NOMBRE_ESCENARIO_ERROR}}
+    Given {{DADO_QUE_ERROR}}
+    When {{CUANDO_ERROR}}
+    Then {{ENTONCES_ERROR}}
+    And {{MENSAJE_ERROR_ESPERADO}}
+
+---
+
+## Definiciones de Steps (Referencia para Implementación)
+
+```typescript
+// steps/{{FEATURE_NAME}}.steps.ts
+import { Given, When, Then } from '@cucumber/cucumber';
+
+Given('{{STEP_GIVEN}}', async function ({{PARAMS}}) {
+  // Implementación
+});
+
+When('{{STEP_WHEN}}', async function ({{PARAMS}}) {
+  // Implementación
+});
+
+Then('{{STEP_THEN}}', async function ({{PARAMS}}) {
+  // Implementación
+});
+```
+
+## Matriz de Cobertura
+
+| Requerimiento | Escenario Gherkin | Estado |
+|---------------|-------------------|--------|
+| RF-001 | Scenario: {{ESC_1}} | Pendiente |
+| RF-002 | Scenario: {{ESC_2}} | Pendiente |
+| RNF-001 | Scenario: {{ESC_PERF}} | Pendiente |
+
+## Checklist de Validación
+- [ ] Todos los RF cubiertos por al menos un escenario
+- [ ] Escenarios de error incluidos
+- [ ] Scenario Outline para datos variables
+- [ ] Background usado para setup común
+- [ ] Tags para filtrado (@smoke, @regression, @feature)
+- [ ] Steps reutilizables identificados
