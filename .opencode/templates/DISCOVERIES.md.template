@@ -1,0 +1,21 @@
+# Descubrimientos: {{FEATURE_NAME}}
+
+## DISC-001: {{TITULO}}
+
+- **Estado**: OPEN
+- **Origen**: TASK-XXX
+- **Descripción**: {{DESCRIPCION}}
+- **Clasificación**: PLANNING_OMISSION | SPEC_CORRECTION | SCOPE_CHANGE | ARCHITECTURE_CONFLICT | TECHNICAL_BLOCKER
+- **Requisitos afectados**: {{REQUISITOS}}
+- **Casos de uso afectados**: {{CASOS_USO}}
+- **Criterios afectados**: {{CRITERIOS}}
+- **Tareas afectadas**: {{TAREAS}}
+- **Pruebas afectadas**: {{PRUEBAS}}
+
+## Decisión
+
+{{DECISION}}
+
+## Acción
+
+{{ACCION}}

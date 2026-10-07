@@ -1,67 +1,63 @@
-# Casos de Uso: {{FEATURE_NAME}}
+# Casos de uso: {{FEATURE_NAME}}
 
-## Actores
-| Actor | Descripción | Tipo |
-|-------|-------------|------|
-| {{ACTOR_1}} | {{DESC_ACTOR_1}} | Primario/Secundario/Sistema |
-| {{ACTOR_2}} | {{DESC_ACTOR_2}} | Primario/Secundario/Sistema |
+## UC-001: {{NOMBRE_CASO_USO}}
 
----
+### Actor
 
-## UC-{{NUMERO}}: {{NOMBRE_CASO_USO}}
+{{ACTOR}}
 
-### Descripción
-{{DESCRIPCION_CASO_USO}}
+### Objetivo
 
-### Actor Principal
-{{ACTOR_PRINCIPAL}}
+{{OBJETIVO}}
 
 ### Precondiciones
-- {{PRE_1}}
-- {{PRE_2}}
 
-### Flujo Principal
+- {{PRE_1}}
+
+### Disparador / punto de inicio
+
+{{TRIGGER}}
+
+Debe quedar identificado el elemento concreto que inicia la interacción: comando, opción de menú, botón, pantalla, evento, llamada de API u otro mecanismo.
+
+### Flujo principal
+
 1. {{PASO_1}}
 2. {{PASO_2}}
 3. {{PASO_3}}
 
-### Flujos Alternativos
+### Flujos alternativos
 
-#### Alt-{{LETRA}}: {{NOMBRE_ALTERNATIVO}}
-1. {{PASO_ALT_1}}
-2. {{PASO_ALT_2}}
+#### UC-001-A1
 
-### Flujos de Excepción
+1. {{ALTERNATIVO_1}}
 
-#### Exc-{{LETRA}}: {{NOMBRE_EXCEPCION}}
-1. {{PASO_EXC_1}}
-2. {{PASO_EXC_2}}
+### Flujos de error
+
+#### UC-001-E1
+
+1. {{ERROR_1}}
 
 ### Postcondiciones
+
 - {{POST_1}}
-- {{POST_2}}
 
-### Reglas de Negocio Asociadas
-- {{RN_1}}
-- {{RN_2}}
+### Reglas de negocio
 
----
+- {{BR_1}}
 
-## Diagrama de Casos de Uso (Mermaid)
-```mermaid
-useCaseDiagram
-    actor {{ACTOR_1}}
-    actor {{ACTOR_2}}
-    usecase "{{UC_NAME}}" as UC1
-    {{ACTOR_1}} --> UC1
-    {{ACTOR_2}} --> UC1
-```
+### Requisitos relacionados
 
-## Checklist de Validación
-- [ ] Actores identificados
-- [ ] Precondiciones claras
-- [ ] Flujo principal completo
-- [ ] Alternativas cubiertas
-- [ ] Excepciones manejadas
-- [ ] Postcondiciones verificables
-- [ ] Reglas de negocio referenciadas
+- RF-001
+- RNF-001
+
+### Criterios relacionados
+
+- AC-001
+- AC-002
+
+## Resumen de actores y entradas
+
+| Caso de uso | Actor | Punto de inicio | Resultado |
+|---|---|---|---|
+| UC-001 | {{ACTOR}} | {{ENTRY_POINT}} | {{RESULTADO}} |

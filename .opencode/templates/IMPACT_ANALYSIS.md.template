@@ -1,0 +1,28 @@
+# Análisis de impacto: {{FEATURE_NAME}}
+
+## DISC-XXX
+
+### Clasificación
+
+PLANNING_OMISSION | SPEC_CORRECTION | SCOPE_CHANGE | ARCHITECTURE_CONFLICT | TECHNICAL_BLOCKER
+
+### Artefactos afectados
+
+| Artefacto | Estado | Acción requerida |
+|---|---|---|
+| SPECS.md | No afectado | — |
+| REQUIREMENTS.md | Afectado | {{ACCION}} |
+| USE_CASES.md | Afectado | {{ACCION}} |
+| ACCEPTANCE_CRITERIA.feature | Afectado | {{ACCION}} |
+| ARCHITECTURE.md | Afectado | {{ACCION}} |
+| TASKS.md | Afectado | {{ACCION}} |
+| TEST_PLAN.md | Afectado | {{ACCION}} |
+| TRACEABILITY.md | Afectado | {{ACCION}} |
+
+## Decisión
+
+{{DECISION}}
+
+## Gate requerido
+
+{{GATE}}

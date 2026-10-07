@@ -1,0 +1,29 @@
+# Registro TDD: {{FEATURE_NAME}}
+
+## TASK-XXX: {{TITULO_TAREA}}
+
+### RED
+
+- Test: TC-XXX
+- Comando ejecutado: `{{COMANDO}}`
+- Resultado observado: {{RESULTADO_RED}}
+
+### GREEN
+
+- Implementación: {{IMPLEMENTACION}}
+- Comando ejecutado: `{{COMANDO}}`
+- Resultado observado: {{RESULTADO_GREEN}}
+
+### REFACTOR
+
+- Cambios: {{REFACTOR}}
+- Comando ejecutado: `{{COMANDO}}`
+- Resultado: {{RESULTADO_REFACTOR}}
+
+### Resultado
+
+- Estado: GREEN
+- Test asociado: TC-XXX
+- TASK: TASK-XXX
+- Requisitos: RF-XXX
+- Criterios: AC-XXX

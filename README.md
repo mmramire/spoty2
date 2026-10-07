@@ -84,15 +84,16 @@ spoty
 
 ## Compilación a Binario Standalone
 
+> **Estado (2026-10-07):** el empaquetado como binario único (Node.js SEA) es una **restricción de diseño** vigente —ver `AGENTS.md` §7 y `docs/constitution.md` (principio 7)—, pero el flujo de build del binario **aún no está configurado en este repositorio**: no existe `sea-config.json`, no hay script de empaquetado en `package.json` ni dependencia de inyección (`postject`). Por tanto, el comando `node --experimental-sea-config sea-config.json` **no es ejecutable todavía**.
+
+Build disponible hoy:
+
 ```bash
 # Compilar TypeScript
 npm run build
-
-# Generar binario SEA (Node.js 22+)
-node --experimental-sea-config sea-config.json
 ```
 
-Esto genera un ejecutable `spoty` (o `spoty.exe` en Windows) que funciona sin Node.js instalado.
+La configuración `sea-config.json` y los pasos de inyección se crearán cuando se especifique el flujo de release del binario (feature futura). El diseño del proyecto se mantiene compatible con esa compilación futura.
 
 ## Uso
 

@@ -1,79 +1,33 @@
-# Criterios de Aceptación (Gherkin/BDD): {{FEATURE_NAME}}
+# Criterios de aceptación: {{FEATURE_NAME}}
 
-@{{TAG_FEATURE}}
-Feature: {{NOMBRE_FEATURE}}
+@{{FEATURE_ID}}
+Característica: {{NOMBRE_FEATURE}}
   Como {{ACTOR}}
   Quiero {{ACCION}}
   Para {{BENEFICIO}}
 
-  Background:
-    Given {{CONTEXTO_INICIAL_COMUN}}
-    And {{PRECONDICION_ADICIONAL}}
+  @AC-001 @RF-001 @UC-001
+  Escenario: {{NOMBRE_ESCENARIO_PRINCIPAL}}
+    Dado que {{DADO}}
+    Cuando {{CUANDO}}
+    Entonces {{ENTONCES}}
 
-  @{{TAG_ESCENARIO_1}}
-  Scenario: {{NOMBRE_ESCENARIO_PRINCIPAL}}
-    Given {{DADO_QUE}}
-    When {{CUANDO}}
-    Then {{ENTONCES}}
-    And {{Y_TAMBIEN}}
+  @AC-002 @RF-001 @UC-001
+  Escenario: {{NOMBRE_ESCENARIO_ERROR}}
+    Dado que {{DADO_ERROR}}
+    Cuando {{CUANDO_ERROR}}
+    Entonces {{ENTONCES_ERROR}}
 
-  @{{TAG_ESCENARIO_2}}
-  Scenario: {{NOMBRE_ESCENARIO_ALTERNATIVO}}
-    Given {{DADO_QUE_ALT}}
-    When {{CUANDO_ALT}}
-    Then {{ENTONCES_ALT}}
+  @AC-003 @RF-002 @UC-001
+  Escenario: {{NOMBRE_ESCENARIO_ENTRADA}}
+    Dado que {{CONTEXTO_ENTRADA}}
+    Cuando el usuario inicia el flujo desde {{PUNTO_DE_INICIO}}
+    Entonces {{RESULTADO_INICIO}}
 
-  @{{TAG_ESCENARIO_3}}
-  Scenario Outline: {{NOMBRE_ESCENARIO_PARAMETRIZADO}}
-    Given {{DADO_QUE}} "<{{PARAM_1}}>" y "<{{PARAM_2}}>"
-    When {{CUANDO}} "<{{ACCION}}>"
-    Then {{ENTONCES}} "<{{RESULTADO_ESPERADO}}"
+## Reglas del documento
 
-    Examples:
-      | {{PARAM_1}} | {{PARAM_2}} | {{ACCION}} | {{RESULTADO_ESPERADO}} |
-      | {{VAL_1}}   | {{VAL_2}}   | {{ACC_1}}  | {{RES_1}}              |
-      | {{VAL_3}}   | {{VAL_4}}   | {{ACC_2}}  | {{RES_2}}              |
-
-  @{{TAG_ESCENARIO_ERROR}}
-  Scenario: {{NOMBRE_ESCENARIO_ERROR}}
-    Given {{DADO_QUE_ERROR}}
-    When {{CUANDO_ERROR}}
-    Then {{ENTONCES_ERROR}}
-    And {{MENSAJE_ERROR_ESPERADO}}
-
----
-
-## Definiciones de Steps (Referencia para Implementación)
-
-```typescript
-// steps/{{FEATURE_NAME}}.steps.ts
-import { Given, When, Then } from '@cucumber/cucumber';
-
-Given('{{STEP_GIVEN}}', async function ({{PARAMS}}) {
-  // Implementación
-});
-
-When('{{STEP_WHEN}}', async function ({{PARAMS}}) {
-  // Implementación
-});
-
-Then('{{STEP_THEN}}', async function ({{PARAMS}}) {
-  // Implementación
-});
-```
-
-## Matriz de Cobertura
-
-| Requerimiento | Escenario Gherkin | Estado |
-|---------------|-------------------|--------|
-| RF-001 | Scenario: {{ESC_1}} | Pendiente |
-| RF-002 | Scenario: {{ESC_2}} | Pendiente |
-| RNF-001 | Scenario: {{ESC_PERF}} | Pendiente |
-
-## Checklist de Validación
-- [ ] Todos los RF cubiertos por al menos un escenario
-- [ ] Escenarios de error incluidos
-- [ ] Scenario Outline para datos variables
-- [ ] Background usado para setup común
-- [ ] Tags para filtrado (@smoke, @regression, @feature)
-- [ ] Steps reutilizables identificados
+- Utilizar palabras clave Gherkin en español: `Característica`, `Escenario`, `Dado`, `Cuando`, `Entonces`, `Y`, `Pero`.
+- Mantener tags técnicos de trazabilidad como `@RF-001`, `@UC-001` y `@AC-001`.
+- Cada criterio debe ser verificable.
+- Incluir escenarios de error cuando sean relevantes.
+- Incluir explícitamente el punto de inicio cuando el usuario deba disparar el flujo.
