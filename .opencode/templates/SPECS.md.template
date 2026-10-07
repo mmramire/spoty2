@@ -1,54 +1,88 @@
-# Especificaciones Técnicas: {{FEATURE_NAME}}
+# Especificación: {{FEATURE_NAME}}
 
-## 1. Información General
-- **Feature**: {{FEATURE_NAME}}
-- **Versión**: 1.0.0
-- **Autor**: {{AUTHOR}}
+## 1. Metadatos
+
+- **Identificador**: {{FEATURE_ID}}
+- **Nombre**: {{FEATURE_NAME}}
+- **Estado**: DRAFT | IN_REVIEW | APPROVED | IMPLEMENTATION_READY | IN_PROGRESS | FEATURE_DONE
+- **Versión**: {{VERSION}}
 - **Fecha**: {{DATE}}
-- **Estado**: Borrador | En Revisión | Aprobado
 
-## 2. Alcance y Objetivos
-### Objetivo Principal
-{{OBJETIVO_PRINCIPAL}}
+## 2. Problema
 
-### Alcance Incluido
-- {{ITEM_1}}
-- {{ITEM_2}}
+{{PROBLEM}}
 
-### Fuera de Alcance
-- {{ITEM_FUERA_1}}
-- {{ITEM_FUERA_2}}
+## 3. Objetivos
 
-## 3. Interfaces y Contratos
+### OBJ-001: {{OBJETIVO_1}}
 
-### API Endpoints
-| Método | Ruta | Descripción | Request | Response |
-|--------|------|-------------|---------|----------|
-| {{METHOD}} | {{PATH}} | {{DESC}} | {{REQUEST_SCHEMA}} | {{RESPONSE_SCHEMA}} |
+{{DESCRIPCION_OBJETIVO_1}}
 
-### Modelos de Datos
-```typescript
-interface {{MODEL_NAME}} {
-  {{FIELD_1}}: {{TYPE_1}};
-  {{FIELD_2}}: {{TYPE_2}};
-}
-```
+## 4. Alcance incluido
 
-## 4. Reglas de Negocio
-- {{REGLA_1}}
-- {{REGLA_2}}
+- {{IN_SCOPE_1}}
+- {{IN_SCOPE_2}}
 
-## 5. Restricciones Técnicas
-- {{RESTRICCION_1}}
-- {{RESTRICCION_2}}
+## 5. Fuera de alcance
 
-## 6. Diagramas
-```mermaid
-{{DIAGRAMA_MERMAID}}
-```
+- {{OUT_SCOPE_1}}
+- {{OUT_SCOPE_2}}
 
-## 7. Criterios de Validación
-- [ ] Especificación completa
-- [ ] Interfaces definidas
-- [ ] Modelos validados
-- [ ] Reglas de negocio documentadas
+## 6. Actores y contexto
+
+| Actor | Interés | Responsabilidad |
+|---|---|---|
+| {{ACTOR_1}} | {{INTERES_1}} | {{RESP_1}} |
+
+## 7. Comportamiento esperado
+
+Describe el comportamiento observable sin decidir todavía la implementación interna.
+
+### Flujo general
+
+`Actor → Punto de inicio → Flujo → Resultado`
+
+### Puntos de inicio
+
+Para cada flujo, indicar explícitamente qué inicia la funcionalidad:
+
+- CLI: {{ENTRY_CLI}}
+- GUI: {{ENTRY_GUI}}
+- Evento: {{ENTRY_EVENT}}
+- API: {{ENTRY_API}}
+
+## 8. Reglas de negocio
+
+- {{BR_1}}
+- {{BR_2}}
+
+## 9. Restricciones
+
+- {{CONSTRAINT_1}}
+- {{CONSTRAINT_2}}
+
+## 10. Supuestos y preguntas abiertas
+
+### Supuestos
+
+- {{ASSUMPTION_1}}
+
+### Preguntas abiertas
+
+- {{QUESTION_1}}
+
+## 11. Resultado esperado
+
+{{EXPECTED_RESULT}}
+
+## 12. Trazabilidad
+
+| Objetivo | Requisitos | Casos de uso | Criterios |
+|---|---|---|---|
+| OBJ-001 | RF-001 | UC-001 | AC-001 |
+
+## 13. Historial de cambios
+
+| Versión | Fecha | Cambio | Motivo |
+|---|---|---|---|
+| {{VERSION}} | {{DATE}} | Creación | {{REASON}} |

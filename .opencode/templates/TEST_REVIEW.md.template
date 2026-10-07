@@ -1,0 +1,20 @@
+# Revisión de pruebas: {{FEATURE_NAME}}
+
+- **Estado**: PASS | PASS_WITH_NOTES | FAIL
+- **Fecha**: {{DATE}}
+
+## Controles
+
+| Control | Resultado | Evidencia |
+|---|---|---|
+| Cada TASK de comportamiento tiene test | — | — |
+| Evidencia RED/GREEN | — | — |
+| Tests deterministas | — | — |
+| Cobertura de errores | — | — |
+| Cobertura de integración | — | — |
+| Cobertura de aceptación | — | — |
+| Suite de tests verde | — | — |
+
+## Hallazgos
+
+{{HALLAZGOS}}
