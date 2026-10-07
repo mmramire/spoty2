@@ -6,9 +6,10 @@ export const MESSAGES = {
     title: '\nSelecciona una opción:',
     connect: '1. Conectar con Spotify',
     status: '2. Ver estado de conexión',
-    logout: '3. Cerrar sesión',
-    exit: '4. Salir',
-    hint: '(navega con 1-4, Ctrl+C para cancelar)',
+    download: '3. Descargar biblioteca',
+    logout: '9. Cerrar sesión',
+    exit: '0. Salir',
+    hint: '(navega con 0-3,9, Ctrl+C para cancelar)',
   },
   config: {
     missingClientId: 'Falta SPOTIFY_CLIENT_ID. Obténlo en https://developer.spotify.com/dashboard',

@@ -47,12 +47,14 @@ export async function promptRedirectUri(): Promise<string> {
 }
 
 export async function promptMenuChoice(): Promise<string> {
-  const choice = await prompt('\nSelecciona una opción (1-4): ');
+  const choice = await prompt('\nSelecciona una opción (0-5): ');
   const optionLabels: Record<string, string> = {
+    '0': 'Salir',
     '1': 'Conectar con Spotify',
     '2': 'Ver estado de conexión',
-    '3': 'Cerrar sesión',
-    '4': 'Salir',
+    '3': '',
+    '4': 'Descargar biblioteca',
+    '5': 'Cerrar sesión',
   };
   if (optionLabels[choice]) {
     writeLine(dim(`  → ${optionLabels[choice]}`));
