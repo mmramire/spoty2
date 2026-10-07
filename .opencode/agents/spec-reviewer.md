@@ -10,7 +10,7 @@ permission:
   edit:
     "*": deny
     "specs/**/SPEC_REVIEW.md": allow
-  bash: deny
+  bash: ask
   websearch: ask
   webfetch: ask
   skill: allow
