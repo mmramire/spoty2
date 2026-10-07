@@ -1,0 +1,60 @@
+# Validación final: {{FEATURE_NAME}}
+
+- **Fecha**: {{DATE}}
+- **Feature**: {{FEATURE_ID}}
+- **Estado**: FEATURE_DONE | FEATURE_NOT_DONE
+
+## Gate SPEC_READY
+
+- Especificación: {{SPEC_STATUS}}
+- Requisitos: {{REQ_STATUS}}
+- Casos de uso: {{UC_STATUS}}
+- Criterios: {{AC_STATUS}}
+- Arquitectura: {{ARCH_STATUS}}
+- Trazabilidad: {{TRACE_STATUS}}
+- Revisión: {{SPEC_REVIEW_STATUS}}
+
+## Gate IMPLEMENTATION_READY
+
+- Tareas: {{TASK_STATUS}}
+- Plan de pruebas: {{TEST_PLAN_STATUS}}
+- TDD definido: {{TDD_PLAN_STATUS}}
+
+## Implementación
+
+| Elemento | Resultado | Evidencia |
+|---|---|---|
+| Requisitos cubiertos | — | — |
+| Casos de uso cubiertos | — | — |
+| Criterios cubiertos | — | — |
+| Tareas completadas | — | — |
+
+## Pruebas
+
+| Comprobación | Comando / evidencia | Resultado |
+|---|---|---|
+| Compilación | {{BUILD_COMMAND}} | — |
+| Lint | {{LINT_COMMAND}} | — |
+| Unitarias | {{UNIT_COMMAND}} | — |
+| Integración | {{INTEGRATION_COMMAND}} | — |
+| Aceptación | {{ACCEPTANCE_COMMAND}} | — |
+
+## Cambios y bloqueos
+
+- Descubrimientos pendientes: {{DISCOVERIES_PENDING}}
+- Solicitudes de cambio pendientes: {{CHANGES_PENDING}}
+- Conflictos arquitectónicos pendientes: {{ARCH_CONFLICTS_PENDING}}
+- Preguntas abiertas: {{OPEN_QUESTIONS}}
+
+## Idioma
+
+- Documentación relevante en español estricto: {{LANGUAGE_STATUS}}
+
+## Modelo
+
+- Modelo utilizado para la validación: {{MODEL}}
+- Fuente: estado observable de la sesión/agente.
+
+## Conclusión
+
+{{CONCLUSION}}

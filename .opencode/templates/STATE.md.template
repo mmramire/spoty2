@@ -1,0 +1,18 @@
+# Estado de feature: {{FEATURE_NAME}}
+
+- **Identificador**: {{FEATURE_ID}}
+- **Estado**: DRAFT
+- **Gate actual**: SPECIFICATION
+- **Aprobación humana**: Pendiente
+- **Descubrimientos pendientes**: 0
+- **Solicitudes de cambio pendientes**: 0
+- **Conflictos arquitectónicos pendientes**: 0
+- **Preguntas abiertas**: 0
+
+## Historial de gates
+
+| Gate | Estado | Fecha | Evidencia |
+|---|---|---|---|
+| SPEC_READY | Pendiente | — | SPEC_REVIEW.md |
+| IMPLEMENTATION_READY | Pendiente | — | TASKS.md + TEST_PLAN.md |
+| FEATURE_DONE | Pendiente | — | VALIDATION.md |

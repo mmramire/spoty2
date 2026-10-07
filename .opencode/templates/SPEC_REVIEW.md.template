@@ -1,0 +1,27 @@
+# Revisión de especificación: {{FEATURE_NAME}}
+
+- **Estado**: PASS | PASS_WITH_NOTES | FAIL
+- **Fecha**: {{DATE}}
+- **Revisor**: spec-reviewer
+
+## Comprobaciones
+
+| Control | Resultado | Evidencia |
+|---|---|---|
+| Alcance definido | — | — |
+| Requisitos verificables | — | — |
+| Casos de uso completos | — | — |
+| Puntos de inicio definidos | — | — |
+| Gherkin verificable | — | — |
+| Trazabilidad completa | — | — |
+| Sin contradicciones | — | — |
+| Arquitectura compatible | — | — |
+| Idioma español | — | — |
+
+## Hallazgos
+
+{{FINDINGS}}
+
+## Gate
+
+`SPEC_READY`: {{SPEC_READY}}

@@ -1,0 +1,34 @@
+# Tareas: {{FEATURE_NAME}}
+
+## TASK-001: {{TITULO_TAREA}}
+
+- **Tipo**: code | test | integration | gui | docs | config | infra
+- **Estado**: PENDING
+- **Requisitos**: RF-001
+- **Casos de uso**: UC-001
+- **Criterios**: AC-001
+- **Dependencias**: —
+- **Resultado verificable**: {{RESULTADO}}
+- **Prueba prevista**: TC-001
+
+### Criterio de finalización
+
+{{DONE_CRITERION}}
+
+### TDD
+
+Para tareas de comportamiento:
+
+1. prueba RED;
+2. implementación mínima GREEN;
+3. REFACTOR;
+4. pruebas verdes;
+5. evidencia en `TDD_LOG.md`.
+
+## Reglas de planificación
+
+- Una tarea debe ser ejecutable de forma razonablemente acotada.
+- No ocultar pasos necesarios detrás de una tarea genérica como "implementar feature".
+- Incluir integración del punto de entrada del flujo cuando sea necesaria.
+- Separar pruebas cuando requieran una preparación o nivel distinto.
+- Mantener trazabilidad completa.

@@ -1,0 +1,21 @@
+# Plan de pruebas: {{FEATURE_NAME}}
+
+## Estrategia
+
+| Nivel | Objetivo | Herramienta | Criterios |
+|---|---|---|---|
+| Unidad | {{OBJ_UNIDAD}} | Vitest | {{CRITERIOS_UNIDAD}} |
+| Integración | {{OBJ_INTEGRACION}} | Vitest | {{CRITERIOS_INTEGRACION}} |
+| Aceptación | {{OBJ_ACEPTACION}} | {{HERRAMIENTA_ACEPTACION}} | {{CRITERIOS_ACEPTACION}} |
+
+## Casos de prueba
+
+| ID | Tarea | Requisito | Criterio | Nivel | Descripción | Estado |
+|---|---|---|---|---|---|---|
+| TC-001 | TASK-001 | RF-001 | AC-001 | Unidad | {{DESCRIPCION}} | Pendiente |
+
+## Cobertura mínima
+
+Cada `TASK-*` de comportamiento debe tener al menos un test asociado.
+
+Cada `AC-*` debe tener evidencia de validación.
