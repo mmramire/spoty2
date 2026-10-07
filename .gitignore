@@ -6,9 +6,6 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
-# opencode config
-.opencode/
-
 # Runtime data (tokens, app logs)
 data/
 

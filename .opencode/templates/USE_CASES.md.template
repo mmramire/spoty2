@@ -1,0 +1,67 @@
+# Casos de Uso: {{FEATURE_NAME}}
+
+## Actores
+| Actor | Descripción | Tipo |
+|-------|-------------|------|
+| {{ACTOR_1}} | {{DESC_ACTOR_1}} | Primario/Secundario/Sistema |
+| {{ACTOR_2}} | {{DESC_ACTOR_2}} | Primario/Secundario/Sistema |
+
+---
+
+## UC-{{NUMERO}}: {{NOMBRE_CASO_USO}}
+
+### Descripción
+{{DESCRIPCION_CASO_USO}}
+
+### Actor Principal
+{{ACTOR_PRINCIPAL}}
+
+### Precondiciones
+- {{PRE_1}}
+- {{PRE_2}}
+
+### Flujo Principal
+1. {{PASO_1}}
+2. {{PASO_2}}
+3. {{PASO_3}}
+
+### Flujos Alternativos
+
+#### Alt-{{LETRA}}: {{NOMBRE_ALTERNATIVO}}
+1. {{PASO_ALT_1}}
+2. {{PASO_ALT_2}}
+
+### Flujos de Excepción
+
+#### Exc-{{LETRA}}: {{NOMBRE_EXCEPCION}}
+1. {{PASO_EXC_1}}
+2. {{PASO_EXC_2}}
+
+### Postcondiciones
+- {{POST_1}}
+- {{POST_2}}
+
+### Reglas de Negocio Asociadas
+- {{RN_1}}
+- {{RN_2}}
+
+---
+
+## Diagrama de Casos de Uso (Mermaid)
+```mermaid
+useCaseDiagram
+    actor {{ACTOR_1}}
+    actor {{ACTOR_2}}
+    usecase "{{UC_NAME}}" as UC1
+    {{ACTOR_1}} --> UC1
+    {{ACTOR_2}} --> UC1
+```
+
+## Checklist de Validación
+- [ ] Actores identificados
+- [ ] Precondiciones claras
+- [ ] Flujo principal completo
+- [ ] Alternativas cubiertas
+- [ ] Excepciones manejadas
+- [ ] Postcondiciones verificables
+- [ ] Reglas de negocio referenciadas

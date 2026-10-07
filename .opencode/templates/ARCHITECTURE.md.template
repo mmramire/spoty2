@@ -1,0 +1,105 @@
+# Diseño de Arquitectura: {{FEATURE_NAME}}
+
+## 1. Resumen Ejecutivo
+- **Feature**: {{FEATURE_NAME}}
+- **Versión**: {{VERSION}}
+- **Fecha**: {{DATE}}
+- **Autor(es)**: {{AUTHORS}}
+- **Estado**: Borrador | En Revisión | Aprobado | Implementado
+
+## 2. Contexto y Motivación
+{{CONTEXTO_Y_MOTIVACION}}
+
+## 3. Decisiones Arquitectónicas (ADRs)
+
+### ADR-{{NUMERO}}: {{TITULO_DECISION}}
+- **Estado**: Propuesto | Aceptado | Rechazado | Reemplazado
+- **Contexto**: {{CONTEXTO_DECISION}}
+- **Decisión**: {{DECISION_TOMADA}}
+- **Consecuencias**: {{CONSECUENCIAS}}
+- **Alternativas Consideradas**:
+  1. {{ALT_1}} - {{RAZON_RECHAZO_1}}
+  2. {{ALT_2}} - {{RAZON_RECHAZO_2}}
+
+---
+
+## 4. Vista de Componentes
+
+### Diagrama de Componentes
+```mermaid
+graph TD
+    {{COMPONENTES_MERMAID}}
+```
+
+### Componentes Principales
+| Componente | Responsabilidad | Tecnología | Interfaces |
+|------------|-----------------|------------|------------|
+| {{COMP_1}} | {{RESP_1}} | {{TECH_1}} | {{IFACE_1}} |
+| {{COMP_2}} | {{RESP_2}} | {{TECH_2}} | {{IFACE_2}} |
+
+## 5. Vista de Datos
+
+### Modelo de Datos
+```mermaid
+erDiagram
+    {{MODELO_ER_MERMAID}}
+```
+
+### Migraciones / Esquemas
+- {{MIGRACION_1}}
+- {{MIGRACION_2}}
+
+## 6. Vista de Despliegue
+
+### Infraestructura
+```mermaid
+graph LR
+    {{DESPLIEGUE_MERMAID}}
+```
+
+### Configuración de Entornos
+| Entorno | Configuración Clave | Variables de Entorno |
+|---------|---------------------|---------------------|
+| Dev | {{DEV_CONFIG}} | {{DEV_VARS}} |
+| Staging | {{STAGING_CONFIG}} | {{STAGING_VARS}} |
+| Prod | {{PROD_CONFIG}} | {{PROD_VARS}} |
+
+## 7. Vista de Seguridad
+- **Autenticación**: {{AUTH_MECANISMO}}
+- **Autorización**: {{AUTHZ_MODEL}}
+- **Cifrado**: {{ENCRYPTION_DETAILS}}
+- **Auditoría**: {{AUDIT_LOGGING}}
+- **Cumplimiento**: {{COMPLIANCE_STANDARDS}}
+
+## 8. Vista de Performance y Escalabilidad
+- **Carga Esperada**: {{LOAD_EXPECTED}}
+- **Latencia Objetivo**: {{LATENCY_TARGET}}
+- **Estrategia de Caché**: {{CACHE_STRATEGY}}
+- **Escalado**: {{SCALING_STRATEGY}}
+
+## 9. Observabilidad
+- **Métricas Clave**: {{KEY_METRICS}}
+- **Logs Estructurados**: {{LOG_FORMAT}}
+- **Trazabilidad**: {{TRACING_STRATEGY}}
+- **Alertas**: {{ALERT_RULES}}
+
+## 10. Riesgos y Mitigaciones
+| Riesgo | Probabilidad | Impacto | Mitigación |
+|--------|--------------|---------|------------|
+| {{RIESGO_1}} | {{PROB_1}} | {{IMP_1}} | {{MIT_1}} |
+| {{RIESGO_2}} | {{PROB_2}} | {{IMP_2}} | {{MIT_2}} |
+
+## 11. Plan de Pruebas de Arquitectura
+- [ ] Pruebas de carga
+- [ ] Pruebas de caos
+- [ ] Pruebas de seguridad
+- [ ] Pruebas de contrato (Contract Testing)
+
+## 12. Checklist de Validación
+- [ ] ADRs documentadas y justificadas
+- [ ] Diagramas actualizados (Componentes, Datos, Despliegue)
+- [ ] Seguridad revisada
+- [ ] Performance validado
+- [ ] Observabilidad cubierta
+- [ ] Riesgos identificados
+- [ ] Aprobado por Architecture Review Board
