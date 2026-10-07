@@ -12,7 +12,7 @@ permission:
     "specs/**/DISCOVERIES.md": allow
     "specs/**/CHANGE_REQUESTS.md": allow
     "specs/**/IMPACT_ANALYSIS.md": allow
-  bash: deny
+  bash: ask
   websearch: allow
   webfetch: allow
   skill: allow

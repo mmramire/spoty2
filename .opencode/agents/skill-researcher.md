@@ -11,7 +11,7 @@ permission:
     "*": deny
     ".opencode/skills/**/SKILL.md": ask
     ".opencode/skill-registry.md": ask
-  bash: deny
+  bash: ask
   websearch: allow
   webfetch: allow
   skill: allow
