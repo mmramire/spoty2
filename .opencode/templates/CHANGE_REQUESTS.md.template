@@ -1,0 +1,20 @@
+# Solicitudes de cambio: {{FEATURE_NAME}}
+
+## CR-001: {{TITULO}}
+
+- **Estado**: PENDIENTE | APROBADO | RECHAZADO | IMPLEMENTADO
+- **Origen**: DISC-XXX
+- **Motivo**: {{MOTIVO}}
+- **Cambio propuesto**: {{CAMBIO}}
+- **Impacto**: {{IMPACTO}}
+- **Aprobador**: {{APROBADOR}}
+- **Fecha**: {{DATE}}
+
+### Artefactos que deben cambiar
+
+- {{ARTEFACTO_1}}
+- {{ARTEFACTO_2}}
+
+### Replanificación
+
+{{REPLANIFICACION}}

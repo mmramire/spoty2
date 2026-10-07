@@ -1,35 +1,48 @@
-# Requerimientos: {{FEATURE_NAME}}
+# Requisitos: {{FEATURE_NAME}}
 
-## Requerimientos Funcionales (RF)
+## 1. Requisitos funcionales
 
-| ID | Descripción | Prioridad (MoSCoW) | Trazabilidad | Estado |
-|----|-------------|-------------------|--------------|--------|
-| RF-001 | {{DESC_RF_1}} | Must | {{OBJETIVO}} | Pendiente |
-| RF-002 | {{DESC_RF_2}} | Should | {{OBJETIVO}} | Pendiente |
-| RF-003 | {{DESC_RF_3}} | Could | {{OBJETIVO}} | Pendiente |
+| ID | Descripción | Prioridad | Objetivo | Estado |
+|---|---|---|---|---|
+| RF-001 | {{DESC_RF_1}} | Must | OBJ-001 | Pendiente |
+| RF-002 | {{DESC_RF_2}} | Should | OBJ-001 | Pendiente |
 
-## Requerimientos No Funcionales (RNF)
+## 2. Requisitos no funcionales
 
-| ID | Categoría | Descripción | Métrica/Criterio | Prioridad |
-|----|-----------|-------------|------------------|-----------|
-| RNF-001 | Performance | {{DESC_RNF_1}} | < {{METRICA}} ms | Must |
-| RNF-002 | Seguridad | {{DESC_RNF_2}} | {{CRITERIO}} | Must |
-| RNF-003 | Usabilidad | {{DESC_RNF_3}} | {{CRITERIO}} | Should |
-| RNF-004 | Disponibilidad | {{DESC_RNF_4}} | {{SLA}} | Must |
+| ID | Categoría | Descripción | Métrica / criterio | Prioridad | Estado |
+|---|---|---|---|---|---|
+| RNF-001 | Seguridad | {{DESC_RNF_1}} | {{CRITERIO_1}} | Must | Pendiente |
+| RNF-002 | Rendimiento | {{DESC_RNF_2}} | {{CRITERIO_2}} | Should | Pendiente |
 
-## Matriz de Trazabilidad
+## 3. Dependencias y exclusiones
 
-| Requerimiento | Caso de Uso | Criterio Aceptación | Test Case |
-|---------------|-------------|---------------------|-----------|
-| RF-001 | UC-001 | AC-001 | TC-001 |
-| RF-002 | UC-002 | AC-002 | TC-002 |
+### Dependencias
 
-## Criterios de Aceptación por Requerimiento
+- {{DEPENDENCIA_1}}
 
-### RF-001: {{DESC_RF_1}}
-- [ ] Criterio 1
-- [ ] Criterio 2
+### Exclusiones
 
-### RF-002: {{DESC_RF_2}}
-- [ ] Criterio 1
-- [ ] Criterio 2
+- {{EXCLUSION_1}}
+
+## 4. Criterios de verificabilidad
+
+Cada requisito debe poder comprobarse mediante uno o más `AC-XXX`, pruebas o evidencia técnica.
+
+## 5. Matriz de trazabilidad
+
+| Requisito | Caso de uso | Criterio | Tarea | Test |
+|---|---|---|---|---|
+| RF-001 | UC-001 | AC-001 | TASK-001 | TC-001 |
+
+## 6. Criterios de aceptación derivados
+
+### RF-001
+
+- {{CRITERIO_RF_001_1}}
+- {{CRITERIO_RF_001_2}}
+
+## 7. Historial de cambios
+
+| Versión | Fecha | Cambio | Motivo |
+|---|---|---|---|
+| {{VERSION}} | {{DATE}} | Creación | {{REASON}} |

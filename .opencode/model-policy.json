@@ -1,0 +1,66 @@
+{
+  "updated_at": "2026-10-07",
+  "provider": "opencode",
+  "roles": {
+    "reasoning": {
+      "primary": "opencode/muse-spark-1.3-contributor-free",
+      "fallbacks": [
+        "opencode/mimo-v2.6-flash-free",
+        "opencode/ling-3.1-flash-free",
+        "opencode/nemotron-3.5-lightning-free",
+        "opencode/big-pickle"
+      ]
+    },
+    "coding": {
+      "primary": "opencode/mimo-v2.6-flash-free",
+      "fallbacks": [
+        "opencode/muse-spark-1.3-contributor-free",
+        "opencode/longcat-2.5-preview-free",
+        "opencode/ling-3.1-flash-free",
+        "opencode/nemotron-3.5-lightning-free",
+        "opencode/big-pickle"
+      ]
+    },
+    "research": {
+      "primary": "opencode/ling-3.1-flash-free",
+      "fallbacks": [
+        "opencode/muse-spark-1.3-contributor-free",
+        "opencode/longcat-2.5-preview-free",
+        "opencode/mimo-v2.6-flash-free",
+        "opencode/big-pickle"
+      ]
+    },
+    "release": {
+      "primary": "opencode/ling-3.1-flash-free",
+      "fallbacks": [
+        "opencode/mimo-v2.6-flash-free",
+        "opencode/muse-spark-1.3-contributor-free",
+        "opencode/big-pickle"
+      ]
+    },
+    "local-sensitive": {
+      "primary": "ollama/qwen3.5:latest",
+      "fallbacks": []
+    }
+  },
+  "assignments": {
+    "sdd": "reasoning",
+    "feature-planner": "reasoning",
+    "spec-reviewer": "reasoning",
+    "architecture-agent": "reasoning",
+    "change-analyzer": "reasoning",
+    "task-planner": "coding",
+    "tdd-implementer": "coding",
+    "test-reviewer": "coding",
+    "final-validator": "reasoning",
+    "skill-researcher": "research",
+    "commit-agent": "release"
+  },
+  "catalog_notes": {
+    "muse-spark-1.3-contributor-free": "Modelo gratuito temporal de OpenCode. La documentación oficial indica que sus prompts y respuestas pueden utilizarse para entrenar futuros modelos de Meta.",
+    "nemotron-3.5-lightning-free": "Modelo gratuito temporal. La documentación oficial advierte no enviar datos personales o confidenciales al endpoint gratuito de NVIDIA.",
+    "longcat-2.5-preview-free": "Modelo gratuito temporal. OpenCode indica política de retención cero del proveedor.",
+    "space-bunny-free": "Modelo gratuito temporal. OpenCode indica política de retención cero del proveedor.",
+    "qwen3.5:latest": "Modelo local descubierto mediante Ollama; la variante exacta y sus capacidades deben verificarse localmente."
+  }
+}

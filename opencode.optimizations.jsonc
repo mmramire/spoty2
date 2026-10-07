@@ -1,22 +1,25 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "default_agent": "sdd",
-  "subagent_depth": 1,
-  "instructions": [
-    "AGENTS.md",
-    ".opencode/rules/*.md"
-  ],
-  "share": "manual",
+
+  // Overlay de optimización. Fusionar con el opencode.json V3 real.
+  // No reemplaza la definición de agentes ni la política central de modelos.
+
   "compaction": {
     "auto": true,
     "prune": true,
     "reserved": 10000
   },
+
+  // Si el proveedor/modelo pequeño cambia, mantener este valor sincronizado
+  // desde la política central de modelos. No asumir que es un fallback general.
+  // "small_model": "provider/model-small",
+
   "permission": {
     "skill": "allow",
     "webfetch": "ask",
     "websearch": "ask"
   },
+
   "watcher": {
     "ignore": [
       "node_modules/**",

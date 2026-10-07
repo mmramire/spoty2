@@ -1,0 +1,12 @@
+# Trazabilidad: {{FEATURE_NAME}}
+
+| OBJ | RF/RNF | UC | AC | TASK | TC | CODE | VALIDATION |
+|---|---|---|---|---|---|---|---|
+| OBJ-001 | RF-001 | UC-001 | AC-001 | TASK-001 | TC-001 | {{CODE_REFERENCIA}} | {{VALIDATION_REFERENCIA}} |
+
+## Reglas
+
+- No dejar requisitos huérfanos.
+- No dejar criterios sin tarea o prueba cuando sean verificables mediante código.
+- No considerar el código como evidencia suficiente sin un vínculo identificable.
+- Actualizar esta matriz después de un cambio de alcance o una replanificación.
