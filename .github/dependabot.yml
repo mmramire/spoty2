@@ -1,10 +1,6 @@
-```yaml
 version: 2
 
 updates:
-  # ============================================================
-  # MINOR + PATCH
-  # ============================================================
   - package-ecosystem: "npm"
     directory: "/"
     target-branch: "main"
@@ -15,12 +11,6 @@ updates:
       time: "04:00"
 
     open-pull-requests-limit: 2
-
-    # Never create major update PRs from this configuration.
-    ignore:
-      - dependency-name: "*"
-        update-types:
-          - "version-update:semver-major"
 
     groups:
       npm-minor-patch:
@@ -34,30 +24,3 @@ updates:
     labels:
       - "dependencies"
       - "dependabot"
-
-  # ============================================================
-  # MAJOR
-  # ============================================================
-  - package-ecosystem: "npm"
-    directory: "/"
-    target-branch: "main"
-
-    schedule:
-      interval: "monthly"
-      day: "monday"
-      time: "04:00"
-
-    open-pull-requests-limit: 2
-
-    # Never create minor or patch update PRs from this configuration.
-    ignore:
-      - dependency-name: "*"
-        update-types:
-          - "version-update:semver-minor"
-          - "version-update:semver-patch"
-
-    labels:
-      - "dependencies"
-      - "dependabot"
-      - "major"
-```
