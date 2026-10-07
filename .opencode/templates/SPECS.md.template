@@ -1,0 +1,54 @@
+# Especificaciones Técnicas: {{FEATURE_NAME}}
+
+## 1. Información General
+- **Feature**: {{FEATURE_NAME}}
+- **Versión**: 1.0.0
+- **Autor**: {{AUTHOR}}
+- **Fecha**: {{DATE}}
+- **Estado**: Borrador | En Revisión | Aprobado
+
+## 2. Alcance y Objetivos
+### Objetivo Principal
+{{OBJETIVO_PRINCIPAL}}
+
+### Alcance Incluido
+- {{ITEM_1}}
+- {{ITEM_2}}
+
+### Fuera de Alcance
+- {{ITEM_FUERA_1}}
+- {{ITEM_FUERA_2}}
+
+## 3. Interfaces y Contratos
+
+### API Endpoints
+| Método | Ruta | Descripción | Request | Response |
+|--------|------|-------------|---------|----------|
+| {{METHOD}} | {{PATH}} | {{DESC}} | {{REQUEST_SCHEMA}} | {{RESPONSE_SCHEMA}} |
+
+### Modelos de Datos
+```typescript
+interface {{MODEL_NAME}} {
+  {{FIELD_1}}: {{TYPE_1}};
+  {{FIELD_2}}: {{TYPE_2}};
+}
+```
+
+## 4. Reglas de Negocio
+- {{REGLA_1}}
+- {{REGLA_2}}
+
+## 5. Restricciones Técnicas
+- {{RESTRICCION_1}}
+- {{RESTRICCION_2}}
+
+## 6. Diagramas
+```mermaid
+{{DIAGRAMA_MERMAID}}
+```
+
+## 7. Criterios de Validación
+- [ ] Especificación completa
+- [ ] Interfaces definidas
+- [ ] Modelos validados
+- [ ] Reglas de negocio documentadas
