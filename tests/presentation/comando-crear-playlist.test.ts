@@ -29,7 +29,7 @@ import type {
 import { handleCommand } from '@/cli-main.js';
 import type { CasoUsoCrearPlaylist } from '@/presentation/composicion-crear-playlist.js';
 import { MESSAGES } from '@/presentation/messages.js';
-import { FORMATO_CONFIRMACION, closeReadline } from '@/presentation/prompts.js';
+import { closeReadline } from '@/presentation/prompts.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const RAIZ = fileURLToPath(new URL('../../', import.meta.url));
@@ -292,8 +292,12 @@ describe('TC-021 — Comando directo spoty create-new-playlist (TASK-015)', () =
         expect(salida).toContain(MESSAGES.playlist.nameLengthError);
         expect(salida).toContain(literalExito(exitoReingreso));
         // Continúa en modo interactivo con la petición literal de nombre (P-001,
-        // §6.2) y, al ser reingreso, la confirmación se solicita por el canal (N-001).
-        expect(readlineDoble.textos).toEqual([MESSAGES.playlist.namePrompt, FORMATO_CONFIRMACION]);
+        // §6.2) y, al ser reingreso, la confirmación se solicita por el canal
+        // (N-001) mostrando el resumen previo (DISC-006).
+        expect(readlineDoble.textos).toEqual([
+          MESSAGES.playlist.namePrompt,
+          `Resumen de la playlist: "Viaje Nuevo" (pública, descripción: "${DESCRIPCION_POR_DEFECTO}")\n¿Crear la playlist con estos datos? (s/N): `,
+        ]);
         expect(doble.invocaciones).toHaveLength(2);
         expect(doble.invocaciones[1]).toMatchObject({
           nombre: 'Viaje Nuevo',

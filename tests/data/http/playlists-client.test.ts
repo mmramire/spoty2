@@ -18,8 +18,13 @@ const ENTRADA_PRIVADA = {
 
 const ENTRADA_PUBLICA = { ...ENTRADA_PRIVADA, visibilidad: 'publica' } as const;
 
+/** Orden de creación vigente: `POST /me/playlists` (DISC-005; el punto `/users/{id}` está retirado). */
+const URL_CREACION = 'https://api.spotify.com/v1/me/playlists';
+
 interface ReglaRespuesta {
   readonly cuandoContenga: string;
+  /** Método exigido para que la regla coincida; ausente = cualquier método. */
+  readonly metodo?: string;
   readonly respuesta: () => Response;
 }
 
@@ -48,13 +53,18 @@ function crearFetchSimulado(reglas: readonly ReglaRespuesta[]): {
   const llamadas: LlamadaSimulada[] = [];
   const fetchSimulado: FetchInyectable = async (url, init) => {
     const texto = String(url);
+    const metodo = init?.method ?? 'GET';
     llamadas.push({
       url: texto,
-      metodo: init?.method ?? 'GET',
+      metodo,
       cabeceras: (init?.headers ?? {}) as Record<string, string>,
       cuerpo: init?.body === undefined ? null : String(init.body),
     });
-    const regla = reglas.find((candidate) => texto.includes(candidate.cuandoContenga));
+    const regla = reglas.find(
+      (candidate) =>
+        texto.includes(candidate.cuandoContenga) &&
+        (candidate.metodo === undefined || candidate.metodo === metodo)
+    );
     if (!regla) {
       throw new Error(`URL no simulada en la prueba: ${texto}`);
     }
@@ -63,17 +73,24 @@ function crearFetchSimulado(reglas: readonly ReglaRespuesta[]): {
   return { fetchSimulado, llamadas };
 }
 
+/** Única regla de creación: la creación no debe tocar ninguna otra URL (DISC-005). */
+function reglaCreacion(respuesta: () => Response): ReglaRespuesta {
+  return { cuandoContenga: '/v1/me/playlists', metodo: 'POST', respuesta };
+}
+
 function reglasCrear(bienFormada: boolean): ReglaRespuesta[] {
   const cuerpoCreada = bienFormada
     ? { id: 'pl-1', external_urls: { spotify: 'https://open.spotify.com/playlist/pl-1' } }
     : { id: 5 };
-  return [
-    {
-      cuandoContenga: '/v1/users/usuario-1/playlists',
-      respuesta: () => respuestaJson(201, cuerpoCreada),
-    },
-    { cuandoContenga: '/v1/me', respuesta: () => respuestaJson(200, { id: 'usuario-1' }) },
-  ];
+  return [reglaCreacion(() => respuestaJson(201, cuerpoCreada))];
+}
+
+/** Comprueba que la creación emite una única petición: la orden de creación. */
+function expectUnicaCreacion(llamadas: readonly LlamadaSimulada[]): void {
+  expect(llamadas).toHaveLength(1);
+  expect(llamadas[0]?.metodo).toBe('POST');
+  expect(llamadas[0]?.url).toBe(URL_CREACION);
+  expect(JSON.stringify(llamadas)).not.toContain('/v1/users/');
 }
 
 async function obtenerErrorApi(promesa: Promise<unknown>): Promise<ErrorApiSpotify> {
@@ -99,9 +116,10 @@ describe('TC-002 crearPlaylist con red simulada (TASK-002)', () => {
       enlace: 'https://open.spotify.com/playlist/pl-1',
     });
 
+    expectUnicaCreacion(llamadas);
     const creacion = llamadas.find((llamada) => llamada.metodo === 'POST');
     expect(creacion).toBeDefined();
-    expect(creacion?.url).toBe('https://api.spotify.com/v1/users/usuario-1/playlists');
+    expect(creacion?.url).toBe(URL_CREACION);
     expect(creacion?.cabeceras.Authorization).toBe('Bearer testigo-ficticio');
     expect(creacion?.cabeceras['Content-Type']).toBe('application/json');
 
@@ -120,46 +138,47 @@ describe('TC-002 crearPlaylist con red simulada (TASK-002)', () => {
 
     await gateway.crearPlaylist(ENTRADA_PUBLICA);
 
+    expectUnicaCreacion(llamadas);
     const creacion = llamadas.find((llamada) => llamada.metodo === 'POST');
     const cuerpo = JSON.parse(creacion?.cuerpo ?? '{}') as Record<string, unknown>;
     expect(cuerpo.public).toBe(true);
   });
 
   it('ante 401 produce error tipado con estado 401 y sin mensajes de usuario', async () => {
-    const { fetchSimulado } = crearFetchSimulado([
-      { cuandoContenga: '/v1/me', respuesta: () => respuestaJson(401, {}) },
+    const { fetchSimulado, llamadas } = crearFetchSimulado([
+      reglaCreacion(() => respuestaJson(401, {})),
     ]);
     const gateway = crearPlaylistGateway({ fetchInyectado: fetchSimulado });
 
     const error = await obtenerErrorApi(gateway.crearPlaylist(ENTRADA_PRIVADA));
 
+    expectUnicaCreacion(llamadas);
     expect(error.estado).toBe(401);
     expect(error.message).toBe('HTTP 401');
   });
 
   it('ante 403 produce error tipado con estado 403', async () => {
-    const { fetchSimulado } = crearFetchSimulado([
-      { cuandoContenga: '/v1/me', respuesta: () => respuestaJson(403, {}) },
+    const { fetchSimulado, llamadas } = crearFetchSimulado([
+      reglaCreacion(() => respuestaJson(403, {})),
     ]);
     const gateway = crearPlaylistGateway({ fetchInyectado: fetchSimulado });
 
     const error = await obtenerErrorApi(gateway.crearPlaylist(ENTRADA_PRIVADA));
 
+    expectUnicaCreacion(llamadas);
     expect(error.estado).toBe(403);
     expect(error.message).toBe('HTTP 403');
   });
 
   it('ante 500 produce error genérico con causa depurada y sin cuerpo de respuesta', async () => {
-    const { fetchSimulado } = crearFetchSimulado([
-      {
-        cuandoContenga: '/v1/me',
-        respuesta: () => respuestaJson(500, { detalle: 'secreto-cuerpo-500' }),
-      },
+    const { fetchSimulado, llamadas } = crearFetchSimulado([
+      reglaCreacion(() => respuestaJson(500, { detalle: 'secreto-cuerpo-500' })),
     ]);
     const gateway = crearPlaylistGateway({ fetchInyectado: fetchSimulado });
 
     const error = await obtenerErrorApi(gateway.crearPlaylist(ENTRADA_PRIVADA));
 
+    expectUnicaCreacion(llamadas);
     expect(error.estado).toBe(500);
     expect(error.causa).toBe('HTTP 500');
     expect(error.message).not.toContain('secreto-cuerpo-500');
@@ -167,44 +186,39 @@ describe('TC-002 crearPlaylist con red simulada (TASK-002)', () => {
   });
 
   it('ante 429 con Retry-After 7 produce reintentoTras 7', async () => {
-    const { fetchSimulado } = crearFetchSimulado([
-      {
-        cuandoContenga: '/v1/users/usuario-1/playlists',
-        respuesta: () => respuestaJson(429, {}, { 'Retry-After': '7' }),
-      },
-      { cuandoContenga: '/v1/me', respuesta: () => respuestaJson(200, { id: 'usuario-1' }) },
+    const { fetchSimulado, llamadas } = crearFetchSimulado([
+      reglaCreacion(() => respuestaJson(429, {}, { 'Retry-After': '7' })),
     ]);
     const gateway = crearPlaylistGateway({ fetchInyectado: fetchSimulado });
 
     const error = await obtenerErrorApi(gateway.crearPlaylist(ENTRADA_PRIVADA));
 
+    expectUnicaCreacion(llamadas);
     expect(error.estado).toBe(429);
     expect(error.reintentoTras).toBe(7);
     expect(error.causa).toBe('HTTP 429');
   });
 
   it('ante 429 sin cabecera Retry-After deja reintentoTras ausente', async () => {
-    const { fetchSimulado } = crearFetchSimulado([
-      {
-        cuandoContenga: '/v1/users/usuario-1/playlists',
-        respuesta: () => respuestaJson(429, {}),
-      },
-      { cuandoContenga: '/v1/me', respuesta: () => respuestaJson(200, { id: 'usuario-1' }) },
+    const { fetchSimulado, llamadas } = crearFetchSimulado([
+      reglaCreacion(() => respuestaJson(429, {})),
     ]);
     const gateway = crearPlaylistGateway({ fetchInyectado: fetchSimulado });
 
     const error = await obtenerErrorApi(gateway.crearPlaylist(ENTRADA_PRIVADA));
 
+    expectUnicaCreacion(llamadas);
     expect(error.estado).toBe(429);
     expect(error.reintentoTras).toBeUndefined();
   });
 
   it('ante 201 con cuerpo inesperado produce error tipado sin identificador', async () => {
-    const { fetchSimulado } = crearFetchSimulado(reglasCrear(false));
+    const { fetchSimulado, llamadas } = crearFetchSimulado(reglasCrear(false));
     const gateway = crearPlaylistGateway({ fetchInyectado: fetchSimulado });
 
     const error = await obtenerErrorApi(gateway.crearPlaylist(ENTRADA_PRIVADA));
 
+    expectUnicaCreacion(llamadas);
     expect(error.estado).toBe(201);
     expect(error.causa).toBe('HTTP 201');
   });

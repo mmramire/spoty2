@@ -28,6 +28,7 @@ import type {
   EleccionVisibilidad,
   EntradaPrompt,
   OpcionDuplicados,
+  ResumenCreacion,
 } from '@/presentation/prompts.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -57,6 +58,7 @@ type OpcionProgramada = OpcionDuplicados | 'ctrl+c';
 interface DoblesPeticiones {
   readonly peticiones: PeticionesCreacion;
   readonly llamadas: string[];
+  readonly resumenes: (ResumenCreacion | undefined)[];
   readonly respuestas: {
     readonly nombre: Respuesta[];
     readonly descripcion: Respuesta[];
@@ -70,6 +72,7 @@ interface DoblesPeticiones {
 /** Doble de las peticiones: registra qué se pidió y consume respuestas programadas. */
 function crearDoblesPeticiones(): DoblesPeticiones {
   const llamadas: string[] = [];
+  const resumenes: (ResumenCreacion | undefined)[] = [];
   const respuestas = {
     nombre: [] as Respuesta[],
     descripcion: [] as Respuesta[],
@@ -109,7 +112,10 @@ function crearDoblesPeticiones(): DoblesPeticiones {
           : { estado: 'seleccionada', visibilidad: 'publica' };
       return eleccion;
     },
-    confirmacion: () => pedir('confirmacion', respuestas.confirmacion),
+    confirmacion: (resumen) => {
+      resumenes.push(resumen);
+      return pedir('confirmacion', respuestas.confirmacion);
+    },
     async opcionDuplicados() {
       llamadas.push('duplicados');
       const respuesta = respuestas.duplicados.shift();
@@ -125,7 +131,7 @@ function crearDoblesPeticiones(): DoblesPeticiones {
     modificacion: () => pedir('modificacion', respuestas.modificacion),
   };
 
-  return { peticiones, llamadas, respuestas };
+  return { peticiones, llamadas, resumenes, respuestas };
 }
 
 type ComportamientoCasoUso = ResultadoCreacion | 'invocarCanal';
@@ -162,6 +168,7 @@ interface FlujoPreparado {
   readonly coordinador: CoordinadorCreacion;
   readonly invocaciones: SolicitudCreacion[];
   readonly llamadas: string[];
+  readonly resumenes: DoblesPeticiones['resumenes'];
   readonly respuestas: DoblesPeticiones['respuestas'];
 }
 
@@ -180,6 +187,7 @@ function prepararFlujo(
     coordinador,
     invocaciones: dobleCasoUso.invocaciones,
     llamadas: dobles.llamadas,
+    resumenes: dobles.resumenes,
     respuestas: dobles.respuestas,
   };
 }
@@ -500,6 +508,74 @@ describe('TC-020 — Coordinador del flujo de creación (TASK-014)', () => {
       expect(flujo.invocaciones).toHaveLength(1);
       expect(salida).not.toContain('Playlist creada:');
       expect(salida).not.toContain(MESSAGES.playlist.cancelled);
+    });
+  });
+
+  describe('resumen previo a la confirmación (DISC-006)', () => {
+    it('pasa el resumen del flujo de menú con nombre, visibilidad y descripción efectivos', async () => {
+      const flujo = prepararFlujo(['invocarCanal']);
+      programarMenuInicial(flujo);
+      flujo.respuestas.confirmacion.push('s');
+
+      const finalizacion = await ejecutarFlujoCreacion(flujo.coordinador);
+
+      expect(finalizacion).toEqual({ estado: 'creada' });
+      expect(flujo.resumenes).toEqual([
+        {
+          nombreEfectivo: 'Viaje 2026',
+          visibilidad: 'publica',
+          descripcionEfectiva: 'Carretera',
+        },
+      ]);
+    });
+
+    it('recorta el nombre y resuelve la descripción por defecto en el resumen', async () => {
+      const flujo = prepararFlujo(['invocarCanal']);
+      flujo.respuestas.nombre.push('  Viaje 2026  ');
+      flujo.respuestas.descripcion.push('   ');
+      flujo.respuestas.visibilidad.push('2');
+      flujo.respuestas.confirmacion.push('s');
+
+      const finalizacion = await ejecutarFlujoCreacion(flujo.coordinador);
+
+      expect(finalizacion).toEqual({ estado: 'creada' });
+      expect(flujo.resumenes).toEqual([
+        {
+          nombreEfectivo: 'Viaje 2026',
+          visibilidad: 'privada',
+          descripcionEfectiva: 'Playlist sin descripción',
+        },
+      ]);
+    });
+
+    it('el comando directo pre-resuelto no pide confirmación y no registra resumen', async () => {
+      const flujo = prepararFlujo(['invocarCanal'], {
+        nombre: 'Viaje 2026',
+        descripcion: 'Carretera',
+        visibilidad: 'privada',
+        confirmacionPreResuelta: true,
+      });
+
+      const finalizacion = await ejecutarFlujoCreacion(flujo.coordinador);
+
+      expect(finalizacion).toEqual({ estado: 'creada' });
+      expect(flujo.llamadas).toEqual([]);
+      expect(flujo.resumenes).toEqual([]);
+    });
+
+    it('con la visibilidad sin resolver la confirmación se pide sin resumen', async () => {
+      const flujo = prepararFlujo(['invocarCanal'], {
+        nombre: 'Viaje 2026',
+        visibilidad: 'ausente',
+        confirmacionPreResuelta: false,
+      });
+      flujo.respuestas.confirmacion.push('s');
+
+      const finalizacion = await ejecutarFlujoCreacion(flujo.coordinador);
+
+      expect(finalizacion).toEqual({ estado: 'creada' });
+      expect(flujo.llamadas).toEqual(['confirmacion']);
+      expect(flujo.resumenes).toEqual([undefined]);
     });
   });
 

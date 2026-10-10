@@ -59,7 +59,7 @@ const DESCRIPCION_POR_DEFECTO = 'Playlist sin descripción';
 const IDENTIFICADOR = 'pl-tc018';
 const ENLACE = 'https://open.spotify.com/playlist/pl-tc018';
 const USUARIO = 'usuario-tc-018';
-const URL_CREACION = `https://api.spotify.com/v1/users/${USUARIO}/playlists`;
+const URL_CREACION = 'https://api.spotify.com/v1/me/playlists';
 
 // Literales aprobados (RF-002, P-001, P-003 y P-006) escritos a mano desde la
 // especificación: la aceptación no los lee del código que pretende evaluar.
@@ -108,7 +108,7 @@ function reglasExitosas(): ReglaSimulacion[] {
 /** Reglas con la creación sustituida por la respuesta de fallo indicada. */
 function reglasConCreacionFallida(respuesta: () => Response): ReglaSimulacion[] {
   return reglasExitosas().map((regla) =>
-    regla.cuandoContenga === '/v1/users/' ? { ...regla, respuesta } : regla
+    regla.metodo === 'POST' ? { ...regla, respuesta } : regla
   );
 }
 

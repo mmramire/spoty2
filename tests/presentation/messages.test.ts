@@ -111,6 +111,21 @@ describe('TC-017 — Literales exactos aprobados de creación de playlist vacía
       expect(MESSAGES.playlist.modifyPrompt.endsWith(': ')).toBe(true);
     });
 
+    // DISC-006: resumen previo y pregunta explícita de la confirmación final.
+    it('resumen de la confirmación con nombre, visibilidad visible y descripción', () => {
+      expect(MESSAGES.playlist.summary('Viaje 2026', 'publica', 'Carretera')).toBe(
+        'Resumen de la playlist: "Viaje 2026" (pública, descripción: "Carretera")'
+      );
+      expect(MESSAGES.playlist.summary('Mix Invierno', 'privada', 'Playlist sin descripción')).toBe(
+        'Resumen de la playlist: "Mix Invierno" (privada, descripción: "Playlist sin descripción")'
+      );
+    });
+
+    it('pregunta explícita de la confirmación con espacio final', () => {
+      expect(MESSAGES.playlist.confirmPrompt).toBe('¿Crear la playlist con estos datos? ');
+      expect(MESSAGES.playlist.confirmPrompt.endsWith(' ')).toBe(true);
+    });
+
     it('ítem de menú y ayuda nueva del flujo de creación', () => {
       expect(MESSAGES.menu.createPlaylist).toBe('4. Crear playlist vacía');
       expect(MESSAGES.menu.hintCreatePlaylist).toBe('(navega con 0-4,9, Ctrl+C para cancelar)');

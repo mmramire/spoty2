@@ -1,14 +1,15 @@
 /**
  * Coordinador del flujo de creación de playlist vacía (TASK-014, TC-020).
  *
- * Trazabilidad: `DISC-002 → OBJ-001 → RF-001, RF-002, RNF-002, RNF-003,
- * RNF-005 → UC-001, UC-001-A1, UC-001-E1, UC-001-E2, UC-001-E3 → AC-001,
- * AC-003, AC-004, AC-005 → TASK-014 → TC-020`.
+ * Trazabilidad: `DISC-002 → DISC-006 → OBJ-001 → RF-001, RF-002, RNF-002,
+ * RNF-003, RNF-005 → UC-001, UC-001-A1, UC-001-E1, UC-001-E2, UC-001-E3 →
+ * AC-001, AC-003, AC-004, AC-005 → TASK-014 → TC-020`.
  *
  * Adaptador delgado (ARCHITECTURE §4.1, §8): el caso de uso y las peticiones
  * llegan inyectados; el coordinador construye la solicitud con el canal de
  * confirmación —pre-resuelto en `confirmada` en comando directo válido sin
- * reingreso (P-001, N-001) e interactivo en cualquier otro flujo— y con
+ * reingreso (P-001, N-001) e interactivo, con resumen de los datos efectivos
+ * y pregunta explícita, en cualquier otro flujo (DISC-006)— y con
  * `duplicadoAceptado` solo cuando procede (UC-001-A1 paso 4). Presenta el
  * resultado `Exito` y cada literal exacto de `MESSAGES` (TASK-011) según el
  * desenlace, gestiona el reingreso de longitud (UC-001-E3), el menú de
@@ -20,13 +21,17 @@
  * presentación (RNF-002, RNF-003, RNF-006).
  */
 import type {
-  CanalConfirmacion,
   DesenlaceConfirmacion,
   EntradaVisibilidad,
   ErrorValidacion,
   ResultadoCreacion,
   SolicitudCreacion,
 } from '../business/playlists/types.js';
+import {
+  recortarNombre,
+  resolverDescripcionEfectiva,
+  resolverVisibilidad,
+} from '../business/playlists/validacion.js';
 import type { CasoUsoCrearPlaylist } from './composicion-crear-playlist.js';
 import { confirm, warning } from './console.js';
 import { MESSAGES } from './messages.js';
@@ -34,6 +39,7 @@ import {
   type EleccionDuplicados,
   type EleccionVisibilidad,
   type EntradaPrompt,
+  type ResumenCreacion,
   confirmarCreacion,
   interpretarConfirmacionS,
   promptDescripcionPlaylist,
@@ -50,7 +56,8 @@ export interface PeticionesCreacion {
   nombre(): Promise<EntradaPrompt>;
   descripcion(): Promise<EntradaPrompt>;
   visibilidad(): Promise<EleccionVisibilidad>;
-  confirmacion(): Promise<EntradaPrompt>;
+  /** Con `resumen` se antepone el resumen de los datos efectivos (DISC-006). */
+  confirmacion(resumen?: ResumenCreacion): Promise<EntradaPrompt>;
   opcionDuplicados(): Promise<EleccionDuplicados>;
   modificacion(): Promise<EntradaPrompt>;
 }
@@ -110,7 +117,6 @@ interface Flujo {
   readonly casoUso: CasoUsoCrearPlaylist;
   readonly peticiones: PeticionesCreacion;
   readonly entradaDirecta?: EntradaDirecta;
-  readonly canalConfirmacion: CanalConfirmacion;
   /** `true` mientras la confirmación siga pre-resuelta (comando directo sin reingreso). */
   canalPreResuelto: boolean;
 }
@@ -136,17 +142,36 @@ const reinvocar = (solicitud: SolicitudCreacion, datos: DatosSolicitud): PasoFlu
 });
 
 /**
+ * Resumen de los datos efectivos de la solicitud que precede a la pregunta
+ * final (DISC-006). Los valores los resuelve Business (`recortarNombre`,
+ * `resolverVisibilidad`, `resolverDescripcionEfectiva`); si la visibilidad no
+ * está resuelta —inalcanzable en el flujo real, porque Business la rechaza
+ * antes de solicitar la confirmación— se confirma sin resumen (formato aprobado).
+ */
+function resumenDe(datos: DatosSolicitud): ResumenCreacion | undefined {
+  const visibilidad = resolverVisibilidad(datos.visibilidad);
+  if (typeof visibilidad !== 'string') {
+    return undefined;
+  }
+  return {
+    nombreEfectivo: recortarNombre(datos.nombre),
+    visibilidad,
+    descripcionEfectiva: resolverDescripcionEfectiva(datos.descripcion),
+  };
+}
+
+/**
  * Canal de confirmación de la invocación (DISC-002, BR-007): mientras la
  * confirmación esté pre-resuelta —comando directo válido sin reingreso—
  * resuelve `confirmada` sin peticiones; en cualquier flujo interactivo
- * solicita `(s/N): ` y devuelve `cancelada` ante `N`, otra respuesta o
- * `Ctrl+C`, sin crear ni registrar.
+ * solicita el resumen y `(s/N): ` y devuelve `cancelada` ante `N`, otra
+ * respuesta o `Ctrl+C`, sin crear ni registrar.
  */
-async function resolverCanal(flujo: Flujo): Promise<DesenlaceConfirmacion> {
+async function resolverCanal(flujo: Flujo, datos: DatosSolicitud): Promise<DesenlaceConfirmacion> {
   if (flujo.canalPreResuelto) {
     return 'confirmada';
   }
-  const respuesta = await flujo.peticiones.confirmacion();
+  const respuesta = await flujo.peticiones.confirmacion(resumenDe(datos));
   if (respuesta.estado === 'abortado') {
     return 'cancelada';
   }
@@ -160,16 +185,18 @@ async function pedir<T>(flujo: Flujo, peticion: () => Promise<T>): Promise<T> {
 }
 
 function crearFlujo(coordinador: CoordinadorCreacion): Flujo {
-  const flujo: Flujo = {
+  return {
     casoUso: coordinador.casoUso,
     peticiones: coordinador.peticiones,
     entradaDirecta: coordinador.entradaDirecta,
     canalPreResuelto: coordinador.entradaDirecta?.confirmacionPreResuelta === true,
-    canalConfirmacion: async () => resolverCanal(flujo),
   };
-  return flujo;
 }
 
+/**
+ * La solicitud lleva su propio canal, construido con los datos de esta
+ * invocación: así la confirmación puede presentar su resumen (DISC-006).
+ */
 function construirSolicitud(
   datos: DatosSolicitud,
   flujo: Flujo,
@@ -179,7 +206,7 @@ function construirSolicitud(
     nombre: datos.nombre,
     descripcion: datos.descripcion,
     visibilidad: datos.visibilidad,
-    canalConfirmacion: flujo.canalConfirmacion,
+    canalConfirmacion: async () => resolverCanal(flujo, datos),
     ...(duplicadoAceptado ? { duplicadoAceptado: true } : {}),
   };
 }
@@ -365,7 +392,7 @@ export const peticionesDeTerminal: PeticionesCreacion = {
   nombre: () => promptNombrePlaylist(),
   descripcion: () => promptDescripcionPlaylist(),
   visibilidad: () => promptVisibilidadPlaylist(),
-  confirmacion: () => confirmarCreacion(),
+  confirmacion: (resumen) => confirmarCreacion(resumen),
   opcionDuplicados: () => promptOpcionDuplicados(),
   modificacion: () => promptModificarDescripcion(),
 };

@@ -89,5 +89,10 @@ export const MESSAGES = {
     namePrompt: 'Nombre de la playlist (3-100 caracteres):',
     descriptionPrompt: 'Descripción (opcional, Enter para usar "Playlist sin descripción"):',
     modifyPrompt: '¿Deseas modificar descripción y visibilidad? (s/N): ',
+    // DISC-006: resumen previo y pregunta explícita de la confirmación final.
+    summary: (nombre: string, visibilidad: Visibilidad, descripcion: string) =>
+      `Resumen de la playlist: "${nombre}" (${VISIBILIDAD_EXIBIBLE[visibilidad]}, ` +
+      `descripción: "${descripcion}")`,
+    confirmPrompt: '¿Crear la playlist con estos datos? ',
   },
 } as const;

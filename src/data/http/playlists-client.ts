@@ -119,6 +119,12 @@ async function solicitar(
   return respuesta;
 }
 
+/**
+ * Resuelve el identificador del usuario vigente con `GET /me`. Solo lo usa el
+ * listado de propias: la creación ya no resuelve usuario porque ordena con
+ * `POST /me/playlists` (DISC-005; el punto `/users/{id}/playlists` está retirado
+ * y devuelve 403 en aplicaciones de desarrollo).
+ */
 async function obtenerUsuario(fetchHttp: FetchInyectable, testigo: string): Promise<string> {
   const respuesta = await solicitar(fetchHttp, `${URL_BASE}/me`, {
     headers: cabecerasAutorizacion(testigo, false),
@@ -143,12 +149,17 @@ async function leerPlaylistCreadada(respuesta: Response): Promise<PlaylistCreada
   return { identificador, enlace };
 }
 
+/**
+ * Orden de creación con `POST /me/playlists` (DISC-005): sin `GET /me` previo,
+ * sin identificador de usuario y sin `collaborative` (P-001, BR-005). El cuerpo
+ * lleva únicamente `name`, `description` y `public` (RNF-001: sin secretos ni
+ * registros propios en este módulo).
+ */
 async function crearPlaylist(
   entrada: EntradaCreacion,
   fetchHttp: FetchInyectable
 ): Promise<PlaylistCreada> {
-  const usuarioId = await obtenerUsuario(fetchHttp, entrada.testigoSesion);
-  const respuesta = await solicitar(fetchHttp, `${URL_BASE}/users/${usuarioId}/playlists`, {
+  const respuesta = await solicitar(fetchHttp, `${URL_BASE}/me/playlists`, {
     method: 'POST',
     headers: cabecerasAutorizacion(entrada.testigoSesion, true),
     body: JSON.stringify({

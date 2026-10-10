@@ -1,4 +1,5 @@
 import type { Visibilidad } from '@/business/playlists/types.js';
+import { recortarNombre } from '@/business/playlists/validacion.js';
 import { MESSAGES } from '@/presentation/messages.js';
 import {
   type EleccionDuplicados,
@@ -7,6 +8,7 @@ import {
   FORMATO_CONFIRMACION,
   type LectorEntrada,
   type OpcionDuplicados,
+  type ResumenCreacion,
   confirmarCreacion,
   interpretarConfirmacionS,
   interpretarOpcionDuplicados,
@@ -23,8 +25,20 @@ import { type Mock, describe, expect, it, vi } from 'vitest';
 // de playlist vacía con entrada simulada (doble de readline) y sin teclado real.
 // RNF-002: los literales usados son los aprobados en TASK-011 y el formato (s/N).
 // BR-007: solo `s` en minúscula confirma; `Ctrl+C` aborta sin crear ni registrar.
+// DISC-006: la confirmación final antepone resumen de los datos y pregunta explícita.
 
 type RespuestaProgramada = string | 'ctrl+c';
+
+/** Resumen de ejemplo: los textos esperados se escriben a mano, sin leerlos de `MESSAGES`. */
+const RESUMEN: ResumenCreacion = {
+  nombreEfectivo: 'Viaje 2026',
+  visibilidad: 'publica',
+  descripcionEfectiva: 'Carretera',
+};
+
+const TEXTO_CONFIRMACION =
+  'Resumen de la playlist: "Viaje 2026" (pública, descripción: "Carretera")\n' +
+  '¿Crear la playlist con estos datos? (s/N): ';
 
 /** Doble de `readline` que consume respuestas programadas y registra lo pedido. */
 function crearLectorDoble(respuestas: readonly RespuestaProgramada[]): LectorEntrada & {
@@ -72,7 +86,14 @@ async function ejecutarFlujoCreacion(
   if (descripcion.estado === 'abortado') return 'abortado';
   const eleccion = await promptVisibilidadPlaylist(lector);
   if (eleccion.estado === 'abortado') return 'abortado';
-  const confirmacion = await confirmarCreacion(lector);
+  const confirmacion = await confirmarCreacion(
+    {
+      nombreEfectivo: recortarNombre(nombre.valor),
+      visibilidad: eleccion.visibilidad,
+      descripcionEfectiva: descripcion.valor,
+    },
+    lector
+  );
   if (confirmacion.estado === 'abortado') return 'abortado';
   if (!interpretarConfirmacionS(confirmacion.valor)) return 'cancelado';
   efectos.registrar();
@@ -152,9 +173,19 @@ describe('TC-018 — Peticiones, confirmaciones y elecciones (TASK-012)', () => 
   describe('confirmación final con formato (s/N) (BR-007, AC-003)', () => {
     it('la confirmación final usa el formato literal (s/N) con espacio final', async () => {
       const doble = crearLectorDoble(['s']);
-      await confirmarCreacion(doble);
+      await confirmarCreacion(undefined, doble);
       expect(FORMATO_CONFIRMACION).toBe('(s/N): ');
       expect(doble.textos).toEqual(['(s/N): ']);
+    });
+
+    it('con resumen antepone el resumen y la pregunta explícita (DISC-006)', async () => {
+      const doble = crearLectorDoble(['s']);
+      await confirmarCreacion(RESUMEN, doble);
+      expect(doble.textos).toEqual([TEXTO_CONFIRMACION]);
+      expect(TEXTO_CONFIRMACION).toContain('Resumen de la playlist: "Viaje 2026"');
+      expect(TEXTO_CONFIRMACION).toContain('pública, descripción: "Carretera"');
+      expect(TEXTO_CONFIRMACION.endsWith(FORMATO_CONFIRMACION)).toBe(true);
+      expect(TEXTO_CONFIRMACION).toContain('¿Crear la playlist con estos datos? ');
     });
 
     it('solo "s" en minúscula confirma; "S", "N", vacío u otra respuesta no confirman', () => {
@@ -170,7 +201,7 @@ describe('TC-018 — Peticiones, confirmaciones y elecciones (TASK-012)', () => 
       const casos: ReadonlyArray<RespuestaProgramada> = ['s', 'S', ''];
       for (const entrada of casos) {
         const doble = crearLectorDoble([entrada]);
-        const respuesta = await confirmarCreacion(doble);
+        const respuesta = await confirmarCreacion(undefined, doble);
         expect(respuesta).toEqual({ estado: 'respondido', valor: entrada });
       }
     });

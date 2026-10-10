@@ -70,9 +70,10 @@ interface LlamadaSimulada {
   readonly cuerpo: string | null;
 }
 
-/** Regla del doble de red: coincide por fragmento de URL. */
+/** Regla del doble de red: coincide por fragmento de URL y, si se indica, por método. */
 interface ReglaRespuesta {
   readonly cuandoContenga: string;
+  readonly metodo?: string;
   readonly respuesta: () => Response;
 }
 
@@ -116,13 +117,18 @@ function instalarRedSimulada(reglas: readonly ReglaRespuesta[]): LlamadaSimulada
   const llamadas: LlamadaSimulada[] = [];
   const doble = async (entrada: unknown, init?: RequestInit): Promise<Response> => {
     const url = urlDe(entrada);
+    const metodo = init?.method ?? 'GET';
     llamadas.push({
       url,
-      metodo: init?.method ?? 'GET',
+      metodo,
       cabeceras: cabecerasDe(init),
       cuerpo: init?.body === undefined ? null : String(init.body),
     });
-    const regla = reglas.find((candidate) => url.includes(candidate.cuandoContenga));
+    const regla = reglas.find(
+      (candidate) =>
+        url.includes(candidate.cuandoContenga) &&
+        (candidate.metodo === undefined || candidate.metodo === metodo)
+    );
     if (!regla) {
       throw new Error(`URL no simulada en la prueba: ${url}`);
     }
@@ -136,15 +142,16 @@ function reglasFlujoFeliz(): ReglaRespuesta[] {
   return [
     {
       cuandoContenga: '/v1/me/playlists',
-      respuesta: () => respuestaJson(200, { items: [], next: null }),
-    },
-    {
-      cuandoContenga: '/v1/users/',
+      metodo: 'POST',
       respuesta: () =>
         respuestaJson(201, {
           id: IDENTIFICADOR,
           external_urls: { spotify: ENLACE },
         }),
+    },
+    {
+      cuandoContenga: '/v1/me/playlists',
+      respuesta: () => respuestaJson(200, { items: [], next: null }),
     },
     {
       cuandoContenga: '/v1/me',
@@ -257,7 +264,7 @@ describe('TC-019 Composición de dependencias reales (TASK-013)', () => {
 
     // Gateway real: crea en Spotify con el testigo de la sesión vigente.
     const creacion = llamadas.find((llamada) => llamada.metodo === 'POST');
-    expect(creacion?.url).toBe('https://api.spotify.com/v1/users/usuario-tc-019/playlists');
+    expect(creacion?.url).toBe('https://api.spotify.com/v1/me/playlists');
     expect(creacion?.cabeceras.Authorization).toBe(`Bearer ${TESTIGO_SESION}`);
   });
 

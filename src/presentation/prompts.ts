@@ -139,6 +139,16 @@ export interface LectorEntrada {
 /** Formato literal de la confirmación final: solo `s` en minúscula confirma (BR-007). */
 export const FORMATO_CONFIRMACION = '(s/N): ';
 
+/**
+ * Datos efectivos que el resumen previo de la confirmación presenta (DISC-006):
+ * nombre recortado, visibilidad y descripción efectiva ya resueltos por Business.
+ */
+export interface ResumenCreacion {
+  readonly nombreEfectivo: string;
+  readonly visibilidad: Visibilidad;
+  readonly descripcionEfectiva: string;
+}
+
 // Texto de la lista de visibilidad: el literal de la lista no está fijado por la
 // especificación (RNF-002 fija las peticiones y la pregunta de modificación);
 // este texto solo presenta la opción pública como preseleccionada (P-002, BR-005).
@@ -241,11 +251,33 @@ export async function promptVisibilidadPlaylist(
   return { estado: 'seleccionada', visibilidad: eleccion.valor };
 }
 
-/** Confirmación final con el formato `(s/N): `; la interpretación la hace el llamado. */
+/**
+ * Texto de la confirmación final (DISC-006): con resumen antepone la línea de
+ * resumen y la pregunta explícita antes del formato `(s/N): `; sin resumen —
+ * visibilidad no resuelta, inalcanzable en el flujo real— conserva el formato
+ * aprobado sin más.
+ */
+export function textoConfirmacion(resumen?: ResumenCreacion): string {
+  if (resumen === undefined) {
+    return FORMATO_CONFIRMACION;
+  }
+  const resumenLiteral = MESSAGES.playlist.summary(
+    resumen.nombreEfectivo,
+    resumen.visibilidad,
+    resumen.descripcionEfectiva
+  );
+  return `${resumenLiteral}\n${MESSAGES.playlist.confirmPrompt}${FORMATO_CONFIRMACION}`;
+}
+
+/**
+ * Confirmación final con el formato `(s/N): ` y, cuando procede, el resumen de
+ * los datos efectivos; la interpretación la hace el llamado (BR-007, DISC-006).
+ */
 export async function confirmarCreacion(
+  resumen?: ResumenCreacion,
   lector: LectorEntrada = lectorReadline
 ): Promise<EntradaPrompt> {
-  return lector.leer(FORMATO_CONFIRMACION);
+  return lector.leer(textoConfirmacion(resumen));
 }
 
 /** Menú de duplicados con el literal aprobado; acepta únicamente `0`, `1` y `2`. */

@@ -58,7 +58,7 @@ const NOMBRE_NUEVO = 'Ruta Norte';
 const IDENTIFICADOR = 'pl-tc019';
 const ENLACE = 'https://open.spotify.com/playlist/pl-tc019';
 const USUARIO = 'usuario-tc-019';
-const URL_CREACION = `https://api.spotify.com/v1/users/${USUARIO}/playlists`;
+const URL_CREACION = 'https://api.spotify.com/v1/me/playlists';
 
 // Literales aprobados (RF-002, RNF-002, P-006) escritos a mano desde la
 // especificación: la aceptación no los lee del código que pretende evaluar.
@@ -67,7 +67,11 @@ const AYUDA_ANTERIOR = '(navega con 0-3,9, Ctrl+C para cancelar)';
 const PETICION_NOMBRE = 'Nombre de la playlist (3-100 caracteres):';
 const PETICION_DESCRIPCION = 'Descripción (opcional, Enter para usar "Playlist sin descripción"):';
 const LISTA_VISIBILIDAD = 'Pública (preseleccionada)';
-const FORMATO_CONFIRMACION = '(s/N): ';
+// Confirmación final con resumen previo (DISC-006), escrita a mano: una por
+// cada flujo de aceptación, con su nombre, visibilidad y descripción efectivos.
+const PREGUNTA_CONFIRMACION = '¿Crear la playlist con estos datos? (s/N): ';
+const CONFIRMACION_MENU = `Resumen de la playlist: "${NOMBRE_MENU}" (pública, descripción: "Playlist sin descripción")\n${PREGUNTA_CONFIRMACION}`;
+const CONFIRMACION_DUPLICADO = `Resumen de la playlist: "${NOMBRE_EXISTENTE}" (pública, descripción: "Playlist sin descripción")\n${PREGUNTA_CONFIRMACION}`;
 const LITERAL_LONGITUD =
   'Error en longitud del nombre de la playlist, mínimo 3, máximo 100 caracteres totales.';
 const LITERAL_DUPLICADO = `Ya existe una playlist llamada "${NOMBRE_EXISTENTE}".`;
@@ -223,8 +227,8 @@ describe('@003-creacion-de-playlist-vacia Característica: Creación de playlist
       // Y el sistema ofrece la lista de visibilidad con pública preseleccionada
       expect(creacion.peticiones[3]).toContain(LISTA_VISIBILIDAD);
 
-      // Y el sistema pide confirmación final con formato (s/N):
-      expect(creacion.peticiones[4]).toBe(FORMATO_CONFIRMACION);
+      // Y el sistema pide confirmación final con resumen y formato (s/N):
+      expect(creacion.peticiones[4]).toBe(CONFIRMACION_MENU);
 
       // Pero solo la respuesta s confirma y cualquier otra respuesta vuelve al menú sin crear
       expect(creacion.texto).toContain('Playlist creada:');
@@ -349,8 +353,8 @@ describe('@003-creacion-de-playlist-vacia Característica: Creación de playlist
       const indiceMenu2 = opcion2.peticiones.indexOf(MENU_DUPLICADOS);
       expect(indiceMenu2).toBeGreaterThanOrEqual(0);
 
-      // Entonces el sistema continúa hacia la confirmación final
-      expect(opcion2.peticiones[indiceMenu2 + 1]).toBe(FORMATO_CONFIRMACION);
+      // Entonces el sistema continúa hacia la confirmación final con el resumen
+      expect(opcion2.peticiones[indiceMenu2 + 1]).toBe(CONFIRMACION_DUPLICADO);
       expect(opcion2.texto).toContain('Playlist creada:');
       expect(opcion2.nuevasCreaciones).toBe(1);
       expect(creaciones()[0]?.url).toBe(URL_CREACION);

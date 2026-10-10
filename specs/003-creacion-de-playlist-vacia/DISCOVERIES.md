@@ -146,3 +146,63 @@ Faceta adicional de la misma decisión (orden): UC-001 coloca la comprobación d
 - `npx vitest run` (sin cobertura) → **exit 0** con 30 ficheros y 295 pruebas en verde: el déficit de cobertura no es una roja de la suite.
 - `npm ls @vitest/coverage-v8` → exit 0, `@vitest/coverage-v8@5.0.3` resuelto y deduped bajo `vitest@5.0.3`, sin warnings de peer.
 - `tests/transversal/verificacion-rnf.test.ts` (TC-028): aserción de RNF-004 actualizada de 7 a 8 `devDependencies` exactamente como fija `TEST_PLAN.md` 0.1.2 (RED previa exit 1, GREEN posterior exit 0 con 20/20).
+
+---
+
+### DISC-005
+
+**Estado:** cerrado (2026-10-10, corrección implementada por TDD: orden migrada a `POST /me/playlists`, suite 302/302 en verde, `tsc` y `biome` sin errores, `npm run build` exit 0)
+
+**Detectado por:** prueba manual del usuario (opción 4 del menú, playlist `01-PRUEBA-2026-10-10`)
+
+**Contexto:** sesión válida con ámbitos `playlist-modify-public` y `playlist-modify-private` verificados en `data/app.log` (intercambio de tokens con ambos ámbitos); el listado de propias para el control de duplicados completa sin error y el caso de uso emite el `info` de inicio; la creación efectiva fracasa con `HTTP 403` y el usuario recibe `Permisos insuficientes para crear la playlist.`
+
+**Descripción:** la puerta `src/data/http/playlists-client.ts:146-161` crea mediante `POST /users/{usuarioId}/playlists` tras un `GET /me` previo para resolver el identificador. Dicho punto de usuario está marcado como **deprecado** en la documentación oficial vigente («Deprecated: Use Create Playlist instead») y la guía de migración de febrero de 2026 lo retira para apps en modo desarrollo: desde el 2026-03-09 devuelve `403 {"error":{"status":403,"message":"You cannot create a playlist for another user"}}` aunque el identificador, los ámbitos y la cuenta sean correctos. El punto vigente es `POST /me/playlists`, que no requiere identificador previo. Evidencia externa: `https://developer.spotify.com/documentation/web-api/reference/create-playlist-for-user` (deprecado) frente a `https://developer.spotify.com/documentation/web-api/reference/create-playlist` (`POST /me/playlists`); incidencia `PipedreamHQ/pipedream#20843` con idéntico 403 y misma corrección en una línea.
+
+**Impacto:** toda creación efectiva por la vía actual termina en `permisosInsuficientes` aunque la sesión y los ámbitos sean correctos; AC-001 no es alcanzable en vivo. No afecta a validación, duplicados ni registro: solo a la orden de creación y a sus pruebas con URL simulada.
+
+**Artefactos afectados:** `src/data/http/playlists-client.ts` (orden de creación), `tests/data/http/playlists-client.test.ts` (aserciones de URL `/v1/users/.../playlists`), sin cambio de requisitos, casos de uso ni criterios (la especificación solo exige «plataforma externa de Spotify», sin fijar URL).
+
+**Decisión:** corrección de implementación sin `CR-XXX`: migrar la orden a `POST /me/playlists` y eliminar la resolución previa de usuario solo para la creación (se conserva para el listado). Aprobación humana para corregir obtenida el 2026-10-10 (opción «Fix 403 + mejora TUI»).
+
+**Tarea relacionada:** corrección sobre TASK-002 (gateway).
+
+**Cambio relacionado:** ninguno de alcance (no se crea `CR-XXX`).
+
+**Aprobación humana requerida:** no para alcance; sí obtenida para la corrección operativa.
+
+**Evidencia:**
+
+- `data/app.log:258` ámbito del intercambio con `playlist-modify-public` y `playlist-modify-private` incluidos; `data/app.log:271-275` `info` de inicio seguido de `error` final con causa `HTTP 403`.
+- `src/data/http/playlists-client.ts:122-161` (`obtenerUsuario` + `POST /users/.../playlists`).
+- Documentación oficial: punto de usuario deprecado frente a punto `/me` vigente; incidencia externa con mismo mensaje de 403.
+
+---
+
+### DISC-006
+
+**Estado:** cerrado (2026-10-10, mejora implementada por TDD y `CR-002` implementada con aprobación humana «Fix 403 + mejora TUI»)
+
+**Detectado por:** prueba manual del usuario (captura TUI: tras la lista de visibilidad solo aparece `(s/N): s` sin pregunta visible)
+
+**Contexto:** flujo de menú opción 4 con peticiones de nombre, descripción y visibilidad conformes a P-002; la confirmación final se solicita con el literal `FORMATO_CONFIRMACION = '(s/N): '` (`src/presentation/prompts.ts:140,244-249`), tal como exigen RF-002 y AC-003 («pide confirmación final con formato `(s/N): `»).
+
+**Descripción:** la implementación es conforme a la especificación vigente pero deficiente en uso: la línea de confirmación aparece huérfana, sin indicar qué acción se confirma ni con qué datos (nombre, visibilidad, descripción efectiva). El usuario no puede saber qué responde con `s`. La especificación no fija ningún texto de pregunta previo al formato, solo el formato.
+
+**Impacto:** riesgo de confirmación a ciegas y de cancelación involuntaria; no bloquea la creación pero degrada AC-003. Cualquier texto de pregunta nuevo o resumen previo altera literales de usuario aprobados (RNF-002) y, por tanto, es cambio de alcance.
+
+**Artefactos afectados (potenciales, no modificados por este descubrimiento):** `SPECS.md` P-002, `REQUIREMENTS.md` RF-002, `ACCEPTANCE_CRITERIA.feature` AC-003, `MESSAGES.playlist`, `src/presentation/prompts.ts` (`confirmarCreacion`), `src/presentation/crear-playlist.ts` (canal de confirmación sin contexto) y sus pruebas.
+
+**Decisión:** pendiente de `CR-XXX` con propuesta mínima: anteponer a la petición una línea de resumen ya compuesta solo con datos aportados por el usuario (nombre efectivo, visibilidad, descripción efectiva) seguida de pregunta explícita que conserve el formato `(s/N): ` aprobado. Aprobación humana para la mejora obtenida el 2026-10-10 (opción «Fix 403 + mejora TUI»); queda pendiente formalizar la `CR-XXX` y actualizar los artefactos citados antes de dar por cerrado el descubrimiento.
+
+**Tarea relacionada:** corrección sobre TASK-012/TASK-014 (peticiones y coordinador).
+
+**Cambio relacionado:** `CR-XXX` pendiente de crear (cambio de literales de usuario).
+
+**Aprobación humana requerida:** sí para alcance, y obtenida para la dirección de la mejora; pendiente la redacción y aprobación del texto exacto.
+
+**Evidencia:**
+
+- Captura TUI del usuario: `Elección [Enter = 1]: 1` seguido de `(s/N): s` sin pregunta.
+- `src/presentation/prompts.ts:140` (`FORMATO_CONFIRMACION`) y `:244-249` (`confirmarCreacion` sin contexto).
+- `SPECS.md:78` P-002 y `ACCEPTANCE_CRITERIA.feature:41` (solo fijan el formato `(s/N): `).

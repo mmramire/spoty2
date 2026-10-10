@@ -67,3 +67,16 @@ Ejecución por TDD (`tdd-implementer`), en rama `feat/REQ-003-creacion-de-playli
 - **Validación externa**: `npx vitest run --coverage` → **exit 0** con sentencias 97,79 % (177/181), ramas 92,50 % (111/120), funciones 100 % (45/45) y líneas 97,76 % (175/179), por encima del umbral del 80 % sin relajarlo. Suite completa `npx vitest run` → exit 0 (30 ficheros, 295 pruebas); `npx tsc --noEmit` y `npx tsc -p tsconfig.type-tests.json --noEmit` → exit 0; `npx biome check` sobre los dos ficheros tocados → exit 0.
 - **No vaciedad**: mutación temporal del `include` al agregado previo → exit 1 (TC-028 vuelve a fallar); reversión con hash idéntico → exit 0.
 - Resultado: `CR-001` queda **IMPLEMENTADO** y `DISC-004` **cerrado**; TASK-020 puede cerrarse con su evidencia completa.
+
+---
+
+## CR-002: Confirmación final con resumen previo y pregunta explícita
+
+- **Estado**: IMPLEMENTADO (ejecución TDD completada el 2026-10-10: suite 30 ficheros, 302 pruebas en verde; `tsc --noEmit` exit 0; `biome check` sin errores; `npm run build` exit 0)
+- **Origen**: `DISC-006`
+- **Clasificación**: `SCOPE_CHANGE` (altera literales de usuario aprobados, RNF-002)
+- **Motivo**: la confirmación final mostraba solo `(s/N): ` sin indicar qué se confirma; el usuario confirmaba a ciegas.
+- **Cambio aprobado**: anteponer a la petición el resumen `Resumen de la playlist: "X" (pública/privada, descripción: "...")` seguido de la pregunta `¿Crear la playlist con estos datos? ` conservando el formato `(s/N): ` y la regla de que solo `s` confirma (BR-007). El resumen usa únicamente datos ya aportados (nombre efectivo, visibilidad, descripción efectiva); sin resumen —visibilidad no resuelta, inalcanzable en el flujo real— se conserva el formato aprobado. El comando directo pre-resuelto y `duplicadoAceptado` siguen sin confirmación propia.
+- **Impacto**: `src/presentation/messages.ts` (literales `summary` y `confirmPrompt`), `src/presentation/prompts.ts` (`ResumenCreacion`, `textoConfirmacion`, `confirmarCreacion(resumen?)`), `src/presentation/crear-playlist.ts` (`confirmacion(resumen?)`, `resumenDe`, canal por solicitud) y sus pruebas; ningún requisito, caso de uso ni arquitectura se modifica salvo los literales aquí fijados.
+- **Aprobador**: aprobación humana explícita obtenida el 2026-10-10 para la opción «Fix 403 + mejora TUI».
+- **Fecha**: 2026-10-10

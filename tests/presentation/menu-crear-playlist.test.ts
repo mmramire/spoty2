@@ -22,7 +22,7 @@ import type { Exito, ResultadoCreacion, SolicitudCreacion } from '@/business/pla
 import { runInteractiveMode } from '@/cli-main.js';
 import type { CasoUsoCrearPlaylist } from '@/presentation/composicion-crear-playlist.js';
 import { MESSAGES } from '@/presentation/messages.js';
-import { FORMATO_CONFIRMACION, closeReadline, promptMenuChoice } from '@/presentation/prompts.js';
+import { closeReadline, promptMenuChoice } from '@/presentation/prompts.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const RAIZ = fileURLToPath(new URL('../../', import.meta.url));
@@ -40,6 +40,11 @@ const REDIRECT_PREVIO = process.env.SPOTIFY_REDIRECT_URI;
 const SELECTOR = '\nSelecciona una opción (0-4,9): ';
 const CONFIRMACION_SALIDA = '¿Estás seguro de que quieres salir? (s/N): ';
 const VUELTA_AL_MENU = 'Volviendo al menú principal...';
+
+// Confirmación final con resumen previo (DISC-006) para el flujo de esta prueba:
+// nombre «Viaje 2026», pública preseleccionada y descripción por defecto.
+const PREGUNTA_CONFIRMACION = '¿Crear la playlist con estos datos? (s/N): ';
+const CONFIRMACION_RESUMEN = `Resumen de la playlist: "Viaje 2026" (pública, descripción: "Playlist sin descripción")\n${PREGUNTA_CONFIRMACION}`;
 
 // Doble de `readline`: registra las peticiones reales, consume respuestas
 // programadas y, ante `Ctrl+C`, dispara los escuchadores `SIGINT` que la
@@ -225,7 +230,7 @@ describe('TC-022 — Opción 4. Crear playlist vacía del menú interactivo (TAS
       MESSAGES.playlist.namePrompt,
       MESSAGES.playlist.descriptionPrompt,
       expect.stringContaining('Pública (preseleccionada)'),
-      FORMATO_CONFIRMACION,
+      CONFIRMACION_RESUMEN,
       SELECTOR,
       CONFIRMACION_SALIDA,
     ]);

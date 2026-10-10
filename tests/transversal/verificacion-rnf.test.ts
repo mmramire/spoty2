@@ -165,7 +165,7 @@ function reglasConPropias(nombres: readonly string[]): ReglaSimulacion[] {
 
 function reglasConCreacion(respuesta: () => Response): ReglaSimulacion[] {
   return reglasExitosas().map((regla) =>
-    regla.cuandoContenga === '/v1/users/' ? { ...regla, respuesta } : regla
+    regla.metodo === 'POST' ? { ...regla, respuesta } : regla
   );
 }
 

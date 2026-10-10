@@ -90,9 +90,11 @@ export function respuestaJson(estado: number, cuerpo: unknown): Response {
   });
 }
 
-/** Regla del doble de red: coincide por fragmento de URL. */
+/** Regla del doble de red: coincide por fragmento de URL y, si se indica, por método. */
 export interface ReglaSimulacion {
   readonly cuandoContenga: string;
+  /** Método exigido para que la regla coincida; ausente = cualquier método. */
+  readonly metodo?: string;
   readonly respuesta: () => Response;
 }
 
@@ -144,13 +146,18 @@ export function simularSpotify(reglas: readonly ReglaSimulacion[]): SpotifySimul
   const llamadas: LlamadaSimulada[] = [];
   const doble = async (entrada: unknown, init?: RequestInit): Promise<Response> => {
     const url = urlDe(entrada);
+    const metodo = init?.method ?? 'GET';
     llamadas.push({
       url,
-      metodo: init?.method ?? 'GET',
+      metodo,
       cabeceras: cabecerasDe(init),
       cuerpo: init?.body === undefined ? null : String(init.body),
     });
-    const regla = reglas.find((candidata) => url.includes(candidata.cuandoContenga));
+    const regla = reglas.find(
+      (candidata) =>
+        url.includes(candidata.cuandoContenga) &&
+        (candidata.metodo === undefined || candidata.metodo === metodo)
+    );
     if (!regla) {
       throw new Error(`URL no simulada en la prueba: ${url}`);
     }
@@ -169,9 +176,10 @@ export interface EscenarioSpotify {
 }
 
 /**
- * Reglas del flujo de creación: perfil, listado de propias paginado hasta
- * agotar y creación con identificador y enlace. El orden importa: la ruta del
- * listado debe resolverse antes que la del perfil.
+ * Reglas del flujo de creación: creación, listado de propias y perfil. El orden
+ * y el método importan: la creación y el listado comparten la URL
+ * `POST|GET /v1/me/playlists` y se distinguen por el método, y el perfil se
+ * resuelve al final porque `/v1/me` es prefijo del listado (DISC-005).
  */
 export function reglasCreacionExitosa(escenario: EscenarioSpotify): ReglaSimulacion[] {
   const items = (escenario.propias ?? []).map((nombre) => ({
@@ -181,15 +189,16 @@ export function reglasCreacionExitosa(escenario: EscenarioSpotify): ReglaSimulac
   return [
     {
       cuandoContenga: '/v1/me/playlists',
-      respuesta: () => respuestaJson(200, { items, next: null }),
-    },
-    {
-      cuandoContenga: '/v1/users/',
+      metodo: 'POST',
       respuesta: () =>
         respuestaJson(201, {
           id: escenario.identificador,
           external_urls: { spotify: escenario.enlace },
         }),
+    },
+    {
+      cuandoContenga: '/v1/me/playlists',
+      respuesta: () => respuestaJson(200, { items, next: null }),
     },
     {
       cuandoContenga: '/v1/me',

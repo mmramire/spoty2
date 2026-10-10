@@ -19,7 +19,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { handleCommand, runInteractiveMode } from '@/cli-main.js';
 import { MESSAGES } from '@/presentation/messages.js';
-import { FORMATO_CONFIRMACION, closeReadline } from '@/presentation/prompts.js';
+import { closeReadline } from '@/presentation/prompts.js';
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   type SalidaCapturada,
@@ -52,7 +52,7 @@ const DESCRIPCION = 'Carretera';
 const IDENTIFICADOR = 'pl-tc023';
 const ENLACE = 'https://open.spotify.com/playlist/pl-tc023';
 const USUARIO = 'usuario-tc-023';
-const URL_CREACION = `https://api.spotify.com/v1/users/${USUARIO}/playlists`;
+const URL_CREACION = 'https://api.spotify.com/v1/me/playlists';
 
 const RUTA_LOG_REAL = join(RAIZ, 'data', 'app.log');
 const RUTA_TOKENS_REAL = join(RAIZ, 'data', 'tokens.json');
@@ -63,6 +63,11 @@ const MENSAJE_EXITO = 'Playlist creada con éxito';
 const SELECTOR = '\nSelecciona una opción (0-4,9): ';
 const CONFIRMACION_SALIDA = '¿Estás seguro de que quieres salir? (s/N): ';
 const VUELTA_AL_MENU = 'Volviendo al menú principal...';
+
+// Confirmación final con resumen previo (DISC-006): nombre y descripción de este
+// arnés, visibilidad pública preseleccionada y descripción por defecto.
+const PREGUNTA_CONFIRMACION = '¿Crear la playlist con estos datos? (s/N): ';
+const CONFIRMACION_RESUMEN = `Resumen de la playlist: "${NOMBRE}" (pública, descripción: "Playlist sin descripción")\n${PREGUNTA_CONFIRMACION}`;
 
 // Literales aprobados (P-006, RF-002) compuestos con los datos de este arnés.
 const LITERAL_EXITO_COMANDO =
@@ -166,7 +171,7 @@ describe('TC-023 — Arnés de extremo a extremo con Spotify simulado (TASK-017)
       MESSAGES.playlist.namePrompt,
       MESSAGES.playlist.descriptionPrompt,
       expect.stringContaining('Pública (preseleccionada)'),
-      FORMATO_CONFIRMACION,
+      CONFIRMACION_RESUMEN,
       SELECTOR,
       CONFIRMACION_SALIDA,
     ]);

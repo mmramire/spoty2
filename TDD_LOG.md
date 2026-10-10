@@ -2260,3 +2260,112 @@ No se modificó ningún requisito, criterio de aceptación, caso de uso, descrip
 #### Observación
 
 La única salida en rojo de esta tarea es `biome check` sobre ficheros `.md`, que no es una incidencia de calidad: Biome no implementa análisis de Markdown y devuelve «sin ficheros procesados». Para los documentos se emplea la validación verificable equivalente prevista por TC-029 (revisión de contenido, UTF-8 estricto y análisis programado de matrices), documentada en la tabla anterior. No se abre ningún `DISC-XXX`: no falta nada para completar TASK-021.
+
+---
+
+## Corrección TDD — Ciclo A: creación por `POST /v1/me/playlists` (HTTP 403) y Ciclo B: resumen previo y pregunta explícita de la confirmación
+
+- **Fecha**: 2026-10-10
+- **Trazabilidad**: `RF-001, RF-002 → RNF-001, RNF-002, RNF-003 → UC-001, UC-001-A1 → AC-001, AC-003 → DISC-005 (Ciclo A) y DISC-006 (Ciclo B) → TC-018, TC-020, TC-021, TC-022, TC-023, TC-026, TC-027`
+- **Tipo**: corrección de comportamiento con ciclo `RED → GREEN → REFACTOR` completo en cada ciclo.
+- **Decisión de alcance**: el fix del 403 se aprueba sin `CR` en `DISC-005`; la mejora de la TUI se aprueba en dirección en `DISC-006`, con `CR-002` **pendiente de formalizar** (ver «Deuda documental» al final).
+- **Alcance respetado**: 4 ficheros de producción y 12 de pruebas; sin dependencias nuevas, sin tocar `specs/` (salvo el `DISCOVERIES.md` previo de DISC-005/DISC-006), sin requisitos, casos de uso ni criterios modificados, sin commits y en la misma rama `feat/REQ-003-creacion-de-playlist-vacia`.
+
+### Ciclo A — la orden de creación usa `POST https://api.spotify.com/v1/me/playlists`
+
+#### TEST creado / modificado
+
+- `tests/data/http/playlists-client.test.ts`: la creación se verifica contra `POST https://api.spotify.com/v1/me/playlists` con cuerpo `{name, description, public}`, sin `collaborative` y **sin** `GET /me` previo; se conservan las comprobaciones de `201` (con `public: true` y `public: false`), `401`, `403`, `429` y `201` con respuesta malformada. No se registran cuerpos ni testigos (RNF-001).
+- Arnés y pruebas afectadas por la mismaURL: `tests/helpers/arnes-e2e.ts` (las reglas ganan `metodo?: string`, porque creación y listado comparten `/v1/me/playlists`), `tests/transversal/verificacion-rnf.test.ts`, `tests/acceptance/comando-directo.test.ts`, `tests/acceptance/menu-interactivo.test.ts`, `tests/integration/arnes-e2e.test.ts` y `tests/presentation/composicion-crear-playlist.test.ts`.
+
+#### Evidencia RED
+
+`npx vitest run tests/data/http/playlists-client.test.ts` → **exit 1** con **8 fallos** por comportamiento ausente: `URL no simulada en la prueba: https://api.spotify.com/v1/me` (el cliente todavía hacía `GET /me` para obtener el identificador del usuario antes de crear).
+
+#### Implementación (GREEN)
+
+- `src/data/http/playlists-client.ts`: `crearPlaylist` emite `POST ${URL_BASE}/me/playlists` con `{name, description, public}` —sin `collaborative` y sin `GET /me` previo—; `obtenerUsuario` se conserva exclusivamente para `listarPlaylistsPropias`.
+- El resto de ficheros solo ajustan el arnés (`metodo` en las reglas de simulación) y las URLs esperadas.
+
+#### Evidencia GREEN
+
+`npx vitest run tests/data/http/playlists-client.test.ts` → **exit 0** con **13/13** pruebas y `Type Errors no errors`.
+
+#### Refactorización
+
+Sin cambio de comportamiento: la distinción `metodo` de las reglas del arnés elimina la ambigüedad de URL compartida entre `POST` de creación y `GET` de listado, y las pruebas de creación y de listado dejan de depender del orden de llegada.
+
+#### Comprobación de no vaciedad (Ciclo A)
+
+| Paso | Acción | Comando | Resultado |
+| --- | --- | --- | --- |
+| 1 | Revertir temporalmente el fix (restaurar la llamada previa a `GET /me`) | `npx vitest run tests/data/http/playlists-client.test.ts` | **exit 1** — 8 fallos, el mismo RED inicial |
+| 2 | Restaurar el fix | `npx vitest run tests/data/http/playlists-client.test.ts` | **exit 0** — 13/13 en verde |
+
+### Ciclo B — resumen de los datos efectivos y pregunta explícita antes de `(s/N): `
+
+#### TEST creados / modificados
+
+- `tests/presentation/messages.test.ts` (+2 pruebas): `MESSAGES.playlist.summary(nombre, visibilidad, descripcion)` → `Resumen de la playlist: "<nombre>" (<pública|privada>, descripción: "<descripción>")` y `MESSAGES.playlist.confirmPrompt` → `¿Crear la playlist con estos datos? ` (con espacio final).
+- `tests/presentation/prompts.test.ts` (+1 prueba): `confirmarCreacion(resumen, lector)` compone `resumen + '\n' + confirmPrompt + '(s/N): '`; sin resumen conserva `FORMATO_CONFIRMACION === '(s/N): '`; `TEXTO_CONFIRMACION` se fija a mano con los literales aprobados; el mini-flujo pasa a invocar `confirmarCreacion(resumen, lector)` y sigue exigiendo que solo `s` minúscula confirme (`S`, `N`, vacío, `N`, `Ctrl+C` cancelan sin crear ni registrar).
+- `tests/presentation/crear-playlist.test.ts` (+4 pruebas, agrupadas en «resumen previo a la confirmación (DISC-006)»): el doble de peticiones registra el `resumen` recibido en `resumenes`, y se comprueba (1) el resumen del flujo de menú, (2) el recorte de nombre con descripción por defecto y visibilidad privada, (3) que el comando directo pre-resuelto no pide confirmación ni registra resumen, y (4) que con la visibilidad sin resolver la confirmación se pide con `undefined` (formato aprobado).
+- `tests/presentation/menu-crear-playlist.test.ts`, `tests/presentation/comando-crear-playlist.test.ts`, `tests/integration/arnes-e2e.test.ts` y `tests/acceptance/menu-interactivo.test.ts`: la secuencia de peticiones espera el texto completo de la confirmación (resumen + pregunta + `(s/N): `) en lugar del formato suelto; en aceptación los literales se siguen escribiendo a mano.
+
+#### Evidencia RED
+
+- `npx vitest run tests/presentation/prompts.test.ts tests/presentation/crear-playlist.test.ts tests/presentation/messages.test.ts tests/presentation/menu-crear-playlist.test.ts tests/presentation/comando-crear-playlist.test.ts` → **exit 1**: `Test Files 5 failed (5)`, `Tests 14 failed | 81 passed (95)`, `Type Errors no errors`, con fallos por comportamiento ausente: `MESSAGES.playlist.summary is not a function`, `MESSAGES.playlist.confirmPrompt` `undefined`, `TypeError: lector.leer is not a function` (firma antigua de `confirmarCreacion`), `expected [ undefined ] to deeply equal [ { …(3) } ]` en `flujo.resumenes` y `expected '(s/N): ' to be 'Resumen de la playlist: …'` en las secuencias de peticiones.
+- `npx vitest run tests/integration/arnes-e2e.test.ts tests/acceptance/menu-interactivo.test.ts` → **exit 1**: `Test Files 2 failed (2)`, `Tests 4 failed | 4 passed (8)`, con los mismos fallos de literal en el arnés y en los dos escenarios de aceptación.
+- Total del RED: **18 pruebas en rojo** por ausencia del comportamiento, con `Type Errors no errors` en ambas ejecuciones.
+
+#### Implementación (GREEN)
+
+- `src/presentation/messages.ts`: literales nuevos `playlist.summary` y `playlist.confirmPrompt`, reutilizando `VISIBILIDAD_EXIBIBLE` (misma visibilidad visible que el literal de éxito).
+- `src/presentation/prompts.ts`: tipo `ResumenCreacion` (`nombreEfectivo`, `visibilidad`, `descripcionEfectiva`), `textoConfirmacion(resumen?)` —con resumen, línea de resumen, pregunta explícita y `(s/N): `; sin resumen, solo el formato aprobado— y `confirmarCreacion(resumen?, lector)` que lee ese texto.
+- `src/presentation/crear-playlist.ts`: `PeticionesCreacion.confirmacion(resumen?)`; `resumenDe(datos)` compone el resumen con los predicados de Business (`recortarNombre`, `resolverVisibilidad`, `resolverDescripcionEfectiva`) y devuelve `undefined` cuando la visibilidad no está resuelta; `resolverCanal(flujo, datos)` pide la confirmación con ese resumen; el canal de confirmación pasa a construirse en `construirSolicitud(datos, flujo)` para que cada solicitud lleve sus propios datos. Se conserva sin cambios el canal pre-resuelto del comando directo (`confirmada` sin peticiones) y la conversión a canal por toda petición interactiva (`duplicadoAceptado` y la opción `2` siguen sin confirmación previa propia).
+
+#### Evidencia GREEN
+
+- `npx vitest run tests/presentation/prompts.test.ts tests/presentation/crear-playlist.test.ts tests/presentation/messages.test.ts tests/presentation/menu-crear-playlist.test.ts tests/presentation/comando-crear-playlist.test.ts` → **exit 0**: `Test Files 5 passed (5)`, `Tests 95 passed (95)`.
+- `npx vitest run tests/integration/arnes-e2e.test.ts tests/acceptance/menu-interactivo.test.ts tests/acceptance/comando-directo.test.ts` → **exit 0**: `Test Files 3 passed (3)`, `Tests 11 passed (11)`.
+
+#### Refactorización
+
+Sin cambio de comportamiento: documentación de cabecera del coordinador actualizada con `DISC-006` y con la descripción del canal con resumen; constantes locales `PREGUNTA_CONFIRMACION`/`CONFIRMACION_*` extraídas en las pruebas para no repetir el literal; correcciones de Biome (formato de `resolverCanal` y sustitución de concatenaciones por un único template literal con interpolación). Verificación posterior: los mismos ficheros en verde y `biome check` sin errores.
+
+#### Comprobación de no vaciedad (Ciclo B)
+
+| Paso | Acción | Comando | Resultado |
+| --- | --- | --- | --- |
+| 1 | Mutación temporal: `textoConfirmacion` ignora el resumen y devuelve siempre `FORMATO_CONFIRMACION` | `npx vitest run tests/presentation/prompts.test.ts tests/presentation/crear-playlist.test.ts tests/presentation/comando-crear-playlist.test.ts` | **exit 1** — 4 fallos: «con resumen antepone el resumen y la pregunta explícita (DISC-006)» y las 3 variantes de reingreso del comando directo, con `expected '(s/N): ' to be 'Resumen de la playlist: …'` |
+| 2 | Mutación revertida | `npx vitest run` | **exit 0** — verde restaurado (30 ficheros, 302 pruebas) |
+
+### Validaciones ejecutadas (ambos ciclos)
+
+| Validación | Comando | Resultado |
+| --- | --- | --- |
+| RED Ciclo A | `npx vitest run tests/data/http/playlists-client.test.ts` | exit 1 — 8 fallos por comportamiento ausente, 0 errores de tipo |
+| GREEN Ciclo A | `npx vitest run tests/data/http/playlists-client.test.ts` | exit 0 — 13/13 |
+| RED Ciclo B (unidad y presentación) | `npx vitest run tests/presentation/prompts.test.ts tests/presentation/crear-playlist.test.ts tests/presentation/messages.test.ts tests/presentation/menu-crear-playlist.test.ts tests/presentation/comando-crear-playlist.test.ts` | exit 1 — 14 fallos, 0 errores de tipo |
+| RED Ciclo B (integración y aceptación) | `npx vitest run tests/integration/arnes-e2e.test.ts tests/acceptance/menu-interactivo.test.ts` | exit 1 — 4 fallos, 0 errores de tipo |
+| GREEN Ciclo B | ejecuciones anteriores tras implementar | exit 0 — 95/95 y 11/11 |
+| No vaciedad Ciclo A y Ciclo B | mutaciones temporales descritas arriba | exit 1 en cada mutación; revertidas → exit 0 |
+| Suite completa (estado final) | `npx vitest run` | exit 0 — **30 ficheros, 302 pruebas**, `Type Errors no errors` (antes 30/295: +7 pruebas nuevas) |
+| Compilación estricta | `npx tsc --noEmit` | exit 0 |
+| Tipos de pruebas | `npx tsc -p tsconfig.type-tests.json --noEmit` | exit 0 |
+| Estática y formato de los 16 ficheros tocados | `npx biome check` sobre `src/data/http/playlists-client.ts`, `src/presentation/{messages,prompts,crear-playlist}.ts` y los 12 ficheros de prueba afectados | exit 0 — `Checked 16 files`, sin errores |
+| Complejidad cognitiva < 15, sin `any` y sin reglas de dominio en Presentation | Reglas `complexity/noExcessiveCognitiveComplexity`, `suspicious/noExplicitAny` y `revisarPresentacion` (TC-028) sin incidentes | Cumple |
+| Sin secretos expuestos (RNF-001) | TC-028 y las pruebas de aceptación: ninguna salida, registro ni fichero generado contiene testigos, `Bearer`, `access_token` ni `refresh_token`; el resumen de la TUI solo presenta nombre, visibilidad y descripción efectivos | Cumple |
+| Sin artefactos aprobados tocados ni commits | `git status --porcelain -- specs/` y `git rev-parse --short HEAD` | Sin entradas nuevas en `specs/`; rama `feat/REQ-003-creacion-de-playlist-vacia`, sin commits nuevos |
+
+### Deuda documental: `CR-002` pendiente de formalizar
+
+`DISC-006` aprobó la dirección (resumen + pregunta explícita) pero no fija el texto exacto. El literal queda **implementado y cubierto por pruebas** con la siguiente redacción, que debe incorporarse al formalizar `CR-002`:
+
+```
+Resumen de la playlist: "<nombre efectivo>" (<pública|privada>, descripción: "<descripción efectiva>")
+¿Crear la playlist con estos datos? (s/N):
+```
+
+(compuesto como `MESSAGES.playlist.summary(...)` + `'\n'` + `MESSAGES.playlist.confirmPrompt` + `FORMATO_CONFIRMACION`; sin resumen —visibilidad no resuelta, inalcanzable en el flujo real— se conserva `(s/N): `).
+
+**No se modificó ningún artefacto aprobado para alojar este literal**: `specs/` queda intacto y la formalización de `CR-002` con el texto anterior queda **pendiente de aprobación humana** antes de declarar `FEATURE_DONE`.
