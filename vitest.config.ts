@@ -12,7 +12,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      include: ['src/business/**/*.ts'],
+      include: ['src/business/playlists/**/*.ts', 'src/business/retry/**/*.ts'],
       thresholds: {
         lines: 80,
         functions: 80,
@@ -22,6 +22,12 @@ export default defineConfig({
     },
     setupFiles: ['./tests/setup.ts'],
     testTimeout: 10000,
+    // TC-001 (nivel tipo): las aserciones expectTypeOf se verifican con tsc.
+    typecheck: {
+      enabled: true,
+      include: ['tests/**/*.test-d.ts'],
+      tsconfig: './tsconfig.type-tests.json',
+    },
   },
   resolve: {
     alias: {

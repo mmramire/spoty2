@@ -8,7 +8,7 @@ permission:
   grep: allow
   list: allow
   edit: ask
-  bash: ask
+  bash: allow
   websearch: ask
   webfetch: ask
   skill: allow

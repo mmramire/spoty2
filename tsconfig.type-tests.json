@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "rootDir": "."
+  },
+  "include": [
+    "src/**/*",
+    "tests/business/playlists/**/*.ts",
+    "tests/data/**/*.ts",
+    "tests/presentation/**/*.ts",
+    "tests/helpers/**/*.ts",
+    "tests/integration/**/*.ts",
+    "tests/acceptance/**/*.ts",
+    "tests/transversal/**/*.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
+}

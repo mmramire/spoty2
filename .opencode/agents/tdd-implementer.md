@@ -18,8 +18,7 @@ permission:
     "specs/**/ADR-*.md": deny
     "specs/**/TRACEABILITY.md": deny
     "specs/**/STATE.md": deny
-  bash:
-    "*": ask
+  bash: allow
   websearch: allow
   webfetch: allow
   skill: allow

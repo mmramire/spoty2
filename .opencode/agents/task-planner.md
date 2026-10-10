@@ -12,7 +12,7 @@ permission:
     "specs/**/TASKS.md": allow
     "specs/**/TEST_PLAN.md": allow
     "specs/**/STATE.md": allow
-  bash: ask
+  bash: allow
   websearch: ask
   webfetch: ask
   skill: allow

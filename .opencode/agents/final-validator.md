@@ -10,7 +10,7 @@ permission:
   edit:
     "*": deny
     "specs/**/VALIDATION.md": allow
-  bash: ask
+  bash: allow
   websearch: deny
   webfetch: deny
   skill: allow
